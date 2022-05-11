@@ -28,6 +28,7 @@
     "@aws-cdk/core:target-partitions": [
       "aws",
       "aws-cn"
-    ]
+    ],
+    "accountId": "035116482964"
   }
 }
