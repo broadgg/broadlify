@@ -6,6 +6,11 @@ import * as s3deploy from 'aws-cdk-lib/aws-s3-deployment';
 import * as targets from 'aws-cdk-lib/aws-route53-targets';
 import * as cloudfrontOrigins from 'aws-cdk-lib/aws-cloudfront-origins';
 import { Duration, RemovalPolicy } from 'aws-cdk-lib';
+import * as codepipeline from 'aws-cdk-lib/aws-codepipeline';
+import * as codepipelineActions from 'aws-cdk-lib/aws-codepipeline-actions';
+import * as codebuild from 'aws-cdk-lib/aws-codebuild';
+import * as codedeploy from 'aws-cdk-lib/aws-codedeploy';
+import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import { Construct } from 'constructs';
 
@@ -70,5 +75,25 @@ export class Infrastructure extends Construct {
       distribution,
       distributionPaths: ['/*'],
     });
+
+    const pipeline = new codepipeline.Pipeline(this, 'Pipeline', {
+      crossAccountKeys: false,
+    });
+
+    const output = new codepipeline.Artifact();
+
+    const sourceStage = new codepipelineActions.GitHubSourceAction({
+      actionName: 'Source',
+      output,
+      owner: 'broadgg',
+      repo: 'broadlify',
+      oauthToken: secretsmanager.Secret.fromSecretNameV2(this, 'token', 'githubOauthToken').secretValue,
+    });
+
+    pipeline.addStage({
+      stageName: 'build',
+      actions: [sourceStage],
+    });
+
   }
 }
