@@ -11,6 +11,6 @@ phases:
       - npm run build
 
 artifacts:
-  base-directory: ./web
+  base-directory: ./src/web
   files:
     - '**/*'
