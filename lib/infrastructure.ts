@@ -9,7 +9,6 @@ import { Duration, RemovalPolicy } from 'aws-cdk-lib';
 import * as codepipeline from 'aws-cdk-lib/aws-codepipeline';
 import * as codepipelineActions from 'aws-cdk-lib/aws-codepipeline-actions';
 import * as codebuild from 'aws-cdk-lib/aws-codebuild';
-import * as codedeploy from 'aws-cdk-lib/aws-codedeploy';
 import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import { Construct } from 'constructs';
@@ -70,7 +69,7 @@ export class Infrastructure extends Construct {
     });
 
     new s3deploy.BucketDeployment(this, 'DeployWithInvalidation', {
-      sources: [s3deploy.Source.asset('./web')],
+      sources: [s3deploy.Source.asset('./src/web')],
       destinationBucket: siteBucket,
       distribution,
       distributionPaths: ['/*'],
@@ -80,20 +79,51 @@ export class Infrastructure extends Construct {
       crossAccountKeys: false,
     });
 
-    const output = new codepipeline.Artifact();
+    const repositorySource = new codepipeline.Artifact();
 
     const sourceStage = new codepipelineActions.GitHubSourceAction({
-      actionName: 'Source',
-      output,
+      actionName: 'Checkout',
+      output: repositorySource,
       owner: 'broadgg',
       repo: 'broadlify',
+      branch: 'main',
       oauthToken: secretsmanager.Secret.fromSecretNameV2(this, 'token', 'githubOauthToken').secretValue,
+      trigger: codepipelineActions.GitHubTrigger.WEBHOOK,
     });
 
     pipeline.addStage({
-      stageName: 'build',
+      stageName: 'Source',
       actions: [sourceStage],
     });
 
+    const buildOutput = new codepipeline.Artifact();
+
+    const buildStage = new codepipelineActions.CodeBuildAction({
+      actionName: "Build",
+      project: new codebuild.PipelineProject(this, "BuildWebsite", {
+        projectName: "Website",
+        buildSpec: codebuild.BuildSpec.fromSourceFilename(
+          "./lib/buildspec.yml"
+        ),
+      }),
+      input: repositorySource,
+      outputs: [buildOutput],
+    });
+
+    pipeline.addStage({
+      stageName: 'Build',
+      actions: [buildStage],
+    });
+
+    const deployStage = new codepipelineActions.S3DeployAction({
+      actionName: "Website",
+      input: buildOutput,
+      bucket: siteBucket,
+    });
+
+    pipeline.addStage({
+      stageName: "Deploy",
+      actions: [deployStage],
+    });
   }
 }

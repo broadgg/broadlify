@@ -1,10 +1,8 @@
 {
-  "name": "broadlify",
-  "version": "0.1.0",
-  "scripts": {
-    "build": "tsc",
-    "watch": "tsc -w",
-    "cdk": "cdk"
+  "dependencies": {
+    "aws-cdk-lib": "2.20.0",
+    "constructs": "^10.1.6",
+    "source-map-support": "^0.5.16"
   },
   "devDependencies": {
     "@types/jest": "^26.0.10",
@@ -15,9 +13,11 @@
     "ts-node": "^9.0.0",
     "typescript": "~3.9.7"
   },
-  "dependencies": {
-    "aws-cdk-lib": "2.20.0",
-    "constructs": "^10.1.6",
-    "source-map-support": "^0.5.16"
-  }
+  "name": "broadlify",
+  "scripts": {
+    "build": "tsc",
+    "cdk": "cdk",
+    "watch": "tsc -w"
+  },
+  "version": "0.1.0"
 }
