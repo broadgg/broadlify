@@ -79,8 +79,9 @@ export class Infrastructure extends Construct {
     });
 
     new s3deploy.BucketDeployment(this, 'ApiDeploy', {
-      sources: [s3deploy.Source.asset('./src/functions/source.zip')],
+      sources: [s3deploy.Source.asset('./src/functions/source')],
       destinationBucket: apiBucket,
+      contentType: 'application/zip',
     });
 
     const pipeline = new codepipeline.Pipeline(this, 'Pipeline', {
