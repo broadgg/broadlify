@@ -86,7 +86,7 @@ export class Infrastructure extends Construct {
     });
 
     const pipeline = new codepipeline.Pipeline(this, 'Pipeline', {
-      crossAccountKeys: false,
+      crossAccountKeys: true,
     });
 
     const repositorySource = new codepipeline.Artifact();
@@ -145,17 +145,17 @@ export class Infrastructure extends Construct {
       actions: [websiteDeployStage, apiDeployStage],
     });
 
-    // const greetingLambda = new lambda.Function(this, 'greetingLambda', {
-    //   runtime: lambda.Runtime.NODEJS_14_X,
-    //   code: lambda.Code.fromBucket(apiBucket, 'greeting.js'),
-    //   handler: 'greeting.handler',
-    // });
+    const greetingLambda = new lambda.Function(this, 'greetingLambda', {
+      runtime: lambda.Runtime.NODEJS_14_X,
+      code: lambda.Code.fromBucket(apiBucket, 'source'),
+      handler: 'greeting.handler',
+    });
     
-    // const api = new apiGateway.RestApi(this, 'api', {
-    //   restApiName: 'api'
-    // });
+    const api = new apiGateway.RestApi(this, 'api', {
+      restApiName: 'api'
+    });
     
-    // const apiIndex = api.root.addResource('index');
-    // apiIndex.addMethod('GET', new apiGateway.LambdaIntegration(greetingLambda));
+    const apiIndex = api.root.addResource('index');
+    apiIndex.addMethod('GET', new apiGateway.LambdaIntegration(greetingLambda));
   }
 }
