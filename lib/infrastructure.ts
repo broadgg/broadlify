@@ -136,6 +136,8 @@ export class Infrastructure extends Construct {
       actionName: "Api",
       input: apiOutput,
       bucket: apiBucket,
+      extract: false,
+      objectKey: 'source',
     });
 
     pipeline.addStage({
