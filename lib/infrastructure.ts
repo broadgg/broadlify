@@ -5,7 +5,7 @@ import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
 import * as s3deploy from 'aws-cdk-lib/aws-s3-deployment';
 import * as targets from 'aws-cdk-lib/aws-route53-targets';
 import * as cloudfrontOrigins from 'aws-cdk-lib/aws-cloudfront-origins';
-import { Duration, RemovalPolicy } from 'aws-cdk-lib';
+import * as cdk from 'aws-cdk-lib';
 import * as codepipeline from 'aws-cdk-lib/aws-codepipeline';
 import * as codepipelineActions from 'aws-cdk-lib/aws-codepipeline-actions';
 import * as codebuild from 'aws-cdk-lib/aws-codebuild';
@@ -29,7 +29,7 @@ export class Infrastructure extends Construct {
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
       bucketName: DOMAIN_NAME,
       publicReadAccess: false,
-      removalPolicy: RemovalPolicy.DESTROY,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 
     const apiBucket = new s3.Bucket(this, 'ApiBucket', {
@@ -37,7 +37,7 @@ export class Infrastructure extends Construct {
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
       bucketName: `${DOMAIN_NAME}-api`,
       publicReadAccess: false,
-      removalPolicy: RemovalPolicy.DESTROY,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 
     siteBucket.addToResourcePolicy(new iam.PolicyStatement({
@@ -71,15 +71,15 @@ export class Infrastructure extends Construct {
       zone
     });
 
-    new s3deploy.BucketDeployment(this, 'DeployWithInvalidation', {
+     new s3deploy.BucketDeployment(this, 'DeployWithInvalidation', {
       sources: [s3deploy.Source.asset('./src/web')],
       destinationBucket: siteBucket,
       distribution,
       distributionPaths: ['/*'],
     });
 
-    new s3deploy.BucketDeployment(this, 'ApiDeploy', {
-      sources: [s3deploy.Source.asset('./src/functions/source')],
+    const apiDeployment = new s3deploy.BucketDeployment(this, 'ApiDeploy', {
+    sources: [s3deploy.Source.asset('./src/functions/source')],
       destinationBucket: apiBucket,
       contentType: 'application/zip',
     });
@@ -149,6 +149,8 @@ export class Infrastructure extends Construct {
       code: lambda.Code.fromBucket(apiBucket, 'source'),
       handler: 'greeting.handler',
     });
+    
+    greetingLambda.node.addDependency(apiDeployment);
     
     const api = new apiGateway.RestApi(this, 'api', {
       domainName: {
