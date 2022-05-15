@@ -1,0 +1,18 @@
+{
+  "name": "directus-cdk",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "directus start"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "directus": "^9.10.0"
+  },
+  "engines": {
+    "node": "14.18.3"
+  }
+}
