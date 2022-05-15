@@ -145,7 +145,7 @@ export class Infrastructure extends Construct {
 
     const greetingLambda = new lambda.Function(this, 'greetingLambda', {
       runtime: lambda.Runtime.NODEJS_14_X,
-      code: lambda.Code.fromBucket(apiBucket, 'greeting.js'),
+      code: lambda.Code.fromBucket(apiBucket, `${apiBucket.bucketName}/greeting.js`),
       handler: 'greeting.handler',
     });
     
