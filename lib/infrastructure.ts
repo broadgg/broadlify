@@ -34,7 +34,7 @@ export class Infrastructure extends Construct {
     const apiBucket = new s3.Bucket(this, 'ApiBucket', {
       autoDeleteObjects: true,
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
-      bucketName: `${DOMAIN_NAME}-API`,
+      bucketName: `${DOMAIN_NAME}-api`,
       publicReadAccess: false,
       removalPolicy: RemovalPolicy.DESTROY,
     });
@@ -133,7 +133,7 @@ export class Infrastructure extends Construct {
     });
 
     const apiDeployStage = new codepipelineActions.S3DeployAction({
-      actionName: "Website",
+      actionName: "Api",
       input: apiOutput,
       bucket: apiBucket,
     });
@@ -145,7 +145,7 @@ export class Infrastructure extends Construct {
 
     const greetingLambda = new lambda.Function(this, 'greetingLambda', {
       runtime: lambda.Runtime.NODEJS_14_X,
-      code: lambda.Code.fromBucket(apiBucket, 'objectKey?'),
+      code: lambda.Code.fromBucket(apiBucket, 'greeting.js'),
       handler: 'greeting.handler',
     });
     
