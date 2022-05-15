@@ -1,10 +1,12 @@
 {
   "dependencies": {
     "aws-cdk-lib": "2.20.0",
+    "aws-lambda": "^1.0.7",
     "constructs": "^10.1.6",
     "source-map-support": "^0.5.16"
   },
   "devDependencies": {
+    "@types/aws-lambda": "^8.10.97",
     "@types/jest": "^26.0.10",
     "@types/node": "10.17.27",
     "aws-cdk": "2.20.0",
@@ -15,9 +17,8 @@
   },
   "name": "broadlify",
   "scripts": {
-    "build": "tsc",
-    "cdk": "cdk",
-    "watch": "tsc -w"
+    "compile": "tsc --noEmit",
+    "build": "tsc"
   },
   "version": "0.1.0"
 }

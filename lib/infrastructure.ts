@@ -96,7 +96,8 @@ export class Infrastructure extends Construct {
       actions: [sourceStage],
     });
 
-    const buildOutput = new codepipeline.Artifact();
+    const websiteOutput = new codepipeline.Artifact('website');
+    const apiOutput = new codepipeline.Artifact('api');
 
     const buildStage = new codepipelineActions.CodeBuildAction({
       actionName: "Build",
@@ -107,7 +108,7 @@ export class Infrastructure extends Construct {
         ),
       }),
       input: repositorySource,
-      outputs: [buildOutput],
+      outputs: [websiteOutput, apiOutput],
     });
 
     pipeline.addStage({
@@ -117,7 +118,7 @@ export class Infrastructure extends Construct {
 
     const deployStage = new codepipelineActions.S3DeployAction({
       actionName: "Website",
-      input: buildOutput,
+      input: websiteOutput,
       bucket: siteBucket,
     });
 

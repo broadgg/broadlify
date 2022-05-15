@@ -11,6 +11,10 @@ phases:
       - npm run build
 
 artifacts:
-  base-directory: ./src/web
-  files:
-    - '**/*'
+  secondary-artifacts:
+    website:
+      files:
+        - 'src/web/*'
+    api:
+      files:
+        - 'src/functions/*.ts'
