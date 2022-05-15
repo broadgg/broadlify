@@ -57,24 +57,13 @@ export class Infrastructure extends Construct {
 
     const distribution = new cloudfront.Distribution(this, 'SiteDistribution', {
       certificate,
-      defaultRootObject: "index.html",
       domainNames: [DOMAIN_NAME],
-      minimumProtocolVersion: cloudfront.SecurityPolicyProtocol.TLS_V1_2_2021,
-      errorResponses:[
-        {
-          httpStatus: 403,
-          responseHttpStatus: 403,
-          responsePagePath: '/error.html',
-          ttl: Duration.minutes(30),
-        }
-      ],
       defaultBehavior: {
         origin: new cloudfrontOrigins.S3Origin(siteBucket, {originAccessIdentity: cloudfrontOAI}),
-        compress: true,
         allowedMethods: cloudfront.AllowedMethods.ALLOW_GET_HEAD_OPTIONS,
         viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
-      }
-    })
+      },
+    });
 
     new route53.ARecord(this, 'SiteAliasRecord', {
       recordName: DOMAIN_NAME,
@@ -87,6 +76,11 @@ export class Infrastructure extends Construct {
       destinationBucket: siteBucket,
       distribution,
       distributionPaths: ['/*'],
+    });
+
+    new s3deploy.BucketDeployment(this, 'ApiDeploy', {
+      sources: [s3deploy.Source.asset('./src/functions/source.zip')],
+      destinationBucket: apiBucket,
     });
 
     const pipeline = new codepipeline.Pipeline(this, 'Pipeline', {
@@ -159,8 +153,9 @@ export class Infrastructure extends Construct {
       domainName: {
         domainName: API_DOMAIN_NAME,
         certificate,
+        endpointType: apiGateway.EndpointType.EDGE,
       },
-      restApiName: 'api'
+      restApiName: 'api',
     });
     
     api.root.addMethod('GET', new apiGateway.LambdaIntegration(greetingLambda));
