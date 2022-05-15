@@ -58,6 +58,7 @@ export class Infrastructure extends Construct {
     const distribution = new cloudfront.Distribution(this, 'SiteDistribution', {
       certificate,
       domainNames: [DOMAIN_NAME],
+      defaultRootObject: 'index.html',
       defaultBehavior: {
         origin: new cloudfrontOrigins.S3Origin(siteBucket, {originAccessIdentity: cloudfrontOAI}),
         allowedMethods: cloudfront.AllowedMethods.ALLOW_GET_HEAD_OPTIONS,
@@ -149,7 +150,7 @@ export class Infrastructure extends Construct {
       code: lambda.Code.fromBucket(apiBucket, 'source'),
       handler: 'greeting.handler',
     });
-    
+
     greetingLambda.node.addDependency(apiDeployment);
     
     const api = new apiGateway.RestApi(this, 'api', {
