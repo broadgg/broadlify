@@ -16,6 +16,7 @@ import * as apiGateway from 'aws-cdk-lib/aws-apigateway';
 import { Construct } from 'constructs';
 
 const DOMAIN_NAME = 'marekvargovcik.com';
+const API_DOMAIN_NAME = `api.${DOMAIN_NAME}`;
 export class Infrastructure extends Construct {
   constructor(scope: Construct, name: string) {
     super(scope, name);
@@ -47,12 +48,15 @@ export class Infrastructure extends Construct {
 
     const certificate = new acm.DnsValidatedCertificate(this, 'SiteCertificate', {
       domainName: DOMAIN_NAME,
+      subjectAlternativeNames: [
+        API_DOMAIN_NAME
+      ],
       hostedZone: zone,
       region: 'us-east-1',
     });
 
     const distribution = new cloudfront.Distribution(this, 'SiteDistribution', {
-      certificate: certificate,
+      certificate,
       defaultRootObject: "index.html",
       domainNames: [DOMAIN_NAME],
       minimumProtocolVersion: cloudfront.SecurityPolicyProtocol.TLS_V1_2_2021,
@@ -152,10 +156,19 @@ export class Infrastructure extends Construct {
     });
     
     const api = new apiGateway.RestApi(this, 'api', {
+      domainName: {
+        domainName: API_DOMAIN_NAME,
+        certificate,
+      },
       restApiName: 'api'
     });
     
-    const apiIndex = api.root.addResource('index');
-    apiIndex.addMethod('GET', new apiGateway.LambdaIntegration(greetingLambda));
+    api.root.addMethod('GET', new apiGateway.LambdaIntegration(greetingLambda));
+
+    new route53.ARecord(this, 'ApiAliasRecord', {
+      recordName: API_DOMAIN_NAME,
+      target: route53.RecordTarget.fromAlias(new targets.ApiGateway(api)),
+      zone
+    });
   }
 }
