@@ -80,6 +80,7 @@ export class Infrastructure extends Construct {
     });
 
     const apiDeployment = new s3deploy.BucketDeployment(this, 'ApiDeploy', {
+    // create this folder (src/functions/source) with zip file "source" when deploying for first time otherwise it will fail
     sources: [s3deploy.Source.asset('./src/functions/source')],
       destinationBucket: apiBucket,
       contentType: 'application/zip',
