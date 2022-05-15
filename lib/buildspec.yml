@@ -13,8 +13,10 @@ phases:
 artifacts:
   secondary-artifacts:
     website:
+      base-directory: src/web
       files:
-        - 'src/web/*'
+        - '**/*'
     api:
+      base-directory: src/functions
       files:
-        - 'src/functions/*.ts'
+        - '**/*.js'
