@@ -31,6 +31,14 @@ export class Infrastructure extends Construct {
       removalPolicy: RemovalPolicy.DESTROY,
     });
 
+    const apiBucket = new s3.Bucket(this, 'ApiBucket', {
+      autoDeleteObjects: true,
+      blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
+      bucketName: `${DOMAIN_NAME}-API`,
+      publicReadAccess: false,
+      removalPolicy: RemovalPolicy.DESTROY,
+    });
+
     siteBucket.addToResourcePolicy(new iam.PolicyStatement({
       actions: ['s3:GetObject'],
       resources: [siteBucket.arnForObjects('*')],
@@ -118,21 +126,26 @@ export class Infrastructure extends Construct {
       actions: [buildStage],
     });
 
-    const deployStage = new codepipelineActions.S3DeployAction({
+    const websiteDeployStage = new codepipelineActions.S3DeployAction({
       actionName: "Website",
       input: websiteOutput,
       bucket: siteBucket,
     });
 
-    pipeline.addStage({
-      stageName: "Deploy",
-      actions: [deployStage],
+    const apiDeployStage = new codepipelineActions.S3DeployAction({
+      actionName: "Website",
+      input: apiOutput,
+      bucket: apiBucket,
     });
 
-    
+    pipeline.addStage({
+      stageName: "Deploy",
+      actions: [websiteDeployStage, apiDeployStage],
+    });
+
     const greetingLambda = new lambda.Function(this, 'greetingLambda', {
       runtime: lambda.Runtime.NODEJS_14_X,
-      code: lambda.Code.fromBucket(s3.Bucket.fromBucketName(this, 'apiOutputBucket', apiOutput.bucketName), apiOutput.objectKey),
+      code: lambda.Code.fromBucket(apiBucket, 'objectKey?'),
       handler: 'greeting.handler',
     });
     
