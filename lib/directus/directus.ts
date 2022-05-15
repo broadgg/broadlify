@@ -23,10 +23,10 @@ export class DirectusApp extends Stack {
     });
 
     fs.appendFileSync(
-      path.join(__dirname, "../res/directus/.env"),
+      path.join(__dirname, "../../src/directus-bare/.env"),
       `
         STORAGE_LOCATIONS="s3"
-        STORAGE_S3_KEY="${props?.fileBucket}"
+        STORAGE_S3_KEY=""
         STORAGE_S3_SECRET=""
         STORAGE_S3_BUCKET="${props?.fileBucket.bucketName}"
         STORAGE_S3_REGION="eu-central-1"
@@ -35,7 +35,7 @@ export class DirectusApp extends Stack {
     );
 
     const elbZipArchive = new s3assets.Asset(this, "MyElbAppZip", {
-      path: path.join(__dirname, "../res/directus/Archive.zip"),
+      path: path.join(__dirname, "../../src/directus-bare/Archive.zip"),
     });
 
     const appVersionProps = new elasticbeanstalk.CfnApplicationVersion(
