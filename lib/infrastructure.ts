@@ -11,6 +11,8 @@ import * as codepipelineActions from 'aws-cdk-lib/aws-codepipeline-actions';
 import * as codebuild from 'aws-cdk-lib/aws-codebuild';
 import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 import * as iam from 'aws-cdk-lib/aws-iam';
+import * as lambda from 'aws-cdk-lib/aws-lambda';
+import * as apiGateway from 'aws-cdk-lib/aws-apigateway';
 import { Construct } from 'constructs';
 
 const DOMAIN_NAME = 'marekvargovcik.com';
@@ -126,5 +128,19 @@ export class Infrastructure extends Construct {
       stageName: "Deploy",
       actions: [deployStage],
     });
+
+    
+    const greetingLambda = new lambda.Function(this, 'greetingLambda', {
+      runtime: lambda.Runtime.NODEJS_14_X,
+      code: lambda.Code.fromBucket(s3.Bucket.fromBucketName(this, 'apiOutputBucket', apiOutput.bucketName), apiOutput.objectKey),
+      handler: 'greeting.handler',
+    });
+    
+    const api = new apiGateway.RestApi(this, 'api', {
+      restApiName: 'api'
+    });
+    
+    const apiIndex = api.root.addResource('index');
+    apiIndex.addMethod('GET', new apiGateway.LambdaIntegration(greetingLambda));
   }
 }
