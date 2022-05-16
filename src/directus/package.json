@@ -1,5 +1,5 @@
 {
-  "name": "directus-cdk",
+  "name": "directus-starter",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -8,7 +8,7 @@
   },
   "keywords": [],
   "author": "",
-  "license": "ISC",
+  "license": "MIT",
   "dependencies": {
     "directus": "^9.10.0"
   },

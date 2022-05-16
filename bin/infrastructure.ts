@@ -10,7 +10,7 @@ class InfrastructureStack extends cdk.Stack {
     super(parent, name, props);
 
     new Infrastructure(this, "Infrastructure");
-    new Backend(this, "Backend");
+    // new Backend(this, "Backend");
   }
 }
 

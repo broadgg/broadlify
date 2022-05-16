@@ -28,7 +28,7 @@ export class Backend extends Construct {
     });
 
     const elbZipArchive = new s3assets.Asset(this, "MyElbAppZip", {
-      path: path.join(__dirname, "../src/directus-rich/Archive.zip"),
+      path: path.join(__dirname, "../src/directus/Archive.zip"),
     });
 
     const appVersionProps = new elasticbeanstalk.CfnApplicationVersion(
