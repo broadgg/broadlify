@@ -60,6 +60,7 @@ export class Infrastructure extends Construct {
       engine: rds.DatabaseClusterEngine.AURORA_MYSQL,
       credentials: rds.Credentials.fromPassword(rdsUsername.toString(), rdsPassword),
       instanceProps: {
+        publiclyAccessible: true,
         vpc,
         vpcSubnets: vpc.selectSubnets({
           subnetType: ec2.SubnetType.PUBLIC,
