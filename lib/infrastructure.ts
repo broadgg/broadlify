@@ -64,8 +64,8 @@ export class Infrastructure extends Construct {
         vpcSubnets: vpc.selectSubnets({
           subnetType: ec2.SubnetType.PUBLIC,
         }),
-        instanceType: ec2.InstanceType.of(ec2.InstanceClass.T4G, ec2.InstanceSize.SMALL)
-      }
+        instanceType: ec2.InstanceType.of(ec2.InstanceClass.T3, ec2.InstanceSize.SMALL)
+      },
     });
 
     const zone = route53.HostedZone.fromLookup(this, 'Zone', { domainName: DOMAIN_NAME });
