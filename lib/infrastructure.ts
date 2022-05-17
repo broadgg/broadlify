@@ -12,7 +12,9 @@ import * as codebuild from 'aws-cdk-lib/aws-codebuild';
 import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
+import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as apiGateway from 'aws-cdk-lib/aws-apigateway';
+import * as rds from 'aws-cdk-lib/aws-rds';
 import { Construct } from 'constructs';
 
 const DOMAIN_NAME = 'marekvargovcik.com';
@@ -20,6 +22,51 @@ const API_DOMAIN_NAME = `api.${DOMAIN_NAME}`;
 export class Infrastructure extends Construct {
   constructor(scope: Construct, name: string) {
     super(scope, name);
+
+    const secrets = secretsmanager.Secret.fromSecretNameV2(this, 'Secrets1', 'broadlifySecrets');
+    const githubOauthToken = secrets.secretValueFromJson('githubOauthToken');
+    const rdsUsername = secrets.secretValueFromJson('rdsUsername');
+    const rdsPassword = secrets.secretValueFromJson('rdsPassword');
+
+    const vpc = new ec2.Vpc(this, 'Vpc', {
+      vpcName: 'broadlify-vpc',
+      cidr: '10.0.0.0/16',
+      maxAzs: 2,
+      subnetConfiguration: [
+        {
+          name: 'broadlify-public-subnet-01',
+          cidrMask: 20,
+          subnetType: ec2.SubnetType.PUBLIC,
+        },
+        {
+          name: 'broadlify-public-subnet-02',
+          cidrMask: 20,
+          subnetType: ec2.SubnetType.PUBLIC,
+        },
+        {
+          name: 'broadlify-private-subnet-01',
+          cidrMask: 20,
+          subnetType: ec2.SubnetType.PRIVATE_WITH_NAT,
+        },
+        {
+          name: 'broadlify-private-subnet-02',
+          cidrMask: 20,
+          subnetType: ec2.SubnetType.PRIVATE_WITH_NAT,
+        },
+      ]
+    })
+
+    const database = new rds.DatabaseCluster(this, 'Rds', {
+      engine: rds.DatabaseClusterEngine.AURORA_MYSQL,
+      credentials: rds.Credentials.fromPassword(rdsUsername.toString(), rdsPassword),
+      instanceProps: {
+        vpc,
+        vpcSubnets: vpc.selectSubnets({
+          subnetType: ec2.SubnetType.PUBLIC,
+        }),
+        instanceType: ec2.InstanceType.of(ec2.InstanceClass.T4G, ec2.InstanceSize.SMALL)
+      }
+    });
 
     const zone = route53.HostedZone.fromLookup(this, 'Zone', { domainName: DOMAIN_NAME });
     const cloudfrontOAI = new cloudfront.OriginAccessIdentity(this, 'CloudfrontOAI');
@@ -98,7 +145,7 @@ export class Infrastructure extends Construct {
       owner: 'broadgg',
       repo: 'broadlify',
       branch: 'main',
-      oauthToken: secretsmanager.Secret.fromSecretNameV2(this, 'token', 'githubOauthToken').secretValue,
+      oauthToken: githubOauthToken,
       trigger: codepipelineActions.GitHubTrigger.WEBHOOK,
     });
 
