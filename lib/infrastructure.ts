@@ -54,7 +54,7 @@ export class Infrastructure extends Construct {
           subnetType: ec2.SubnetType.PRIVATE_WITH_NAT,
         },
       ]
-    })
+    });
 
     const database = new rds.DatabaseCluster(this, 'Rds', {
       engine: rds.DatabaseClusterEngine.AURORA_MYSQL,
@@ -68,6 +68,9 @@ export class Infrastructure extends Construct {
         instanceType: ec2.InstanceType.of(ec2.InstanceClass.T3, ec2.InstanceSize.SMALL)
       },
     });
+
+    // opens 3306 port
+    database.connections.allowDefaultPortFromAnyIpv4();
 
     const zone = route53.HostedZone.fromLookup(this, 'Zone', { domainName: DOMAIN_NAME });
     const cloudfrontOAI = new cloudfront.OriginAccessIdentity(this, 'CloudfrontOAI');
