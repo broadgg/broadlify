@@ -1,8 +1,15 @@
-*.js
-!jest.config.js
-*.d.ts
-node_modules
-.cdk.staging
-cdk.out
-
+# os files
 .DS_Store
+*:Zone.Identifier
+# deps
+node_modules
+# turbo
+.turbo
+# ide
+.vscode
+# ts
+*.tsbuildinfo
+# sensitive
+.env
+# output dir
+dist

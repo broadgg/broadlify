@@ -1,0 +1,6 @@
+{
+  "extends": [
+    "canonical/react",
+    "../../packages/config/.eslintrc.base.json"
+  ]
+}

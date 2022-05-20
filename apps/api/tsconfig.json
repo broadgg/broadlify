@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": [
+        "lib/*"
+      ]
+    }
+  },
+  "exclude": [
+    "node_modules"
+  ],
+  "extends": "../../packages/config/tsconfig.base.json"
+}

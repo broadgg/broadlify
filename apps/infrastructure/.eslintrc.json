@@ -1,0 +1,6 @@
+{
+  "extends": "../../packages/config/.eslintrc.base.json",
+  "rules": {
+    "no-new": "off"
+  }
+}

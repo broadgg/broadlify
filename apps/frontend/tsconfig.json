@@ -1,0 +1,25 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "jsx": "react-jsx",
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
+    "module": "esnext",
+    "moduleResolution": "node",
+    "noEmit": true,
+    "paths": {
+      "@/*": [
+        "src/*"
+      ]
+    },
+    "target": "esnext"
+  },
+  "extends": "../../packages/config/tsconfig.base.json",
+  "include": [
+    "vite.config.ts",
+    "src"
+  ]
+}
