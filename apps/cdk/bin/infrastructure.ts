@@ -2,7 +2,7 @@ import 'source-map-support/register';
 
 import * as cdk from 'aws-cdk-lib';
 
-import { Infrastructure } from '@/infrastructure';
+import { Infrastructure } from '../lib/infrastructure';
 
 class InfrastructureStack extends cdk.Stack {
   constructor(parent: cdk.App, name: string, props: cdk.StackProps) {

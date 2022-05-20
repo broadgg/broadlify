@@ -8,14 +8,16 @@
         "dist/**"
       ]
     },
+    "deploy": {
+      "dependsOn": [
+        "lint",
+        "build"
+      ]
+    },
     "dev": {
       "cache": false
     },
-    "lint": {
-      "outputs": []
-    },
-    "lint:fix": {
-      "outputs": []
-    }
+    "lint": {},
+    "lint:fix": {}
   }
 }

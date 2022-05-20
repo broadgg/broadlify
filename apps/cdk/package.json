@@ -11,10 +11,11 @@
     "ts-node": "^10.7.0",
     "typescript": "~4.6.4"
   },
-  "name": "@broadlify/infrastructure",
+  "name": "@broadlify/cdk",
   "scripts": {
-    "build": "tsc --noEmit",
-    "dev": "tsc --noEmit --watch",
+    "build": "tsc",
+    "deploy": "cdk deploy",
+    "dev": "tsc --watch",
     "lint": "eslint bin lib",
     "lint:fix": "eslint --fix bin lib"
   },

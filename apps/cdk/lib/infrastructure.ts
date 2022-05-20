@@ -1,3 +1,5 @@
+import * as path from 'node:path';
+
 import * as cdk from 'aws-cdk-lib';
 import * as apiGateway from 'aws-cdk-lib/aws-apigateway';
 import * as acm from 'aws-cdk-lib/aws-certificatemanager';
@@ -17,6 +19,8 @@ import * as s3deploy from 'aws-cdk-lib/aws-s3-deployment';
 import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 import { Construct } from 'constructs';
 
+const WEB_SOURCE_DIRECTORY = path.join(__dirname, '../../frontend/dist');
+const API_SOURCE_ZIP = path.join(__dirname, '../../api/dist/source');
 const DOMAIN_NAME = 'marekvargovcik.com';
 const API_DOMAIN_NAME = `api.${DOMAIN_NAME}`;
 
@@ -26,7 +30,7 @@ class Infrastructure extends Construct {
 
     const secrets = secretsmanager.Secret.fromSecretNameV2(
       this,
-      'Secrets1',
+      'Secrets',
       'broadlifySecrets',
     );
     const githubOauthToken = secrets.secretValueFromJson('githubOauthToken');
@@ -155,7 +159,7 @@ class Infrastructure extends Construct {
       destinationBucket: siteBucket,
       distribution,
       distributionPaths: ['/*'],
-      sources: [s3deploy.Source.asset('./src/web')],
+      sources: [s3deploy.Source.asset(WEB_SOURCE_DIRECTORY)],
     });
 
     const apiDeployment = new s3deploy.BucketDeployment(this, 'ApiDeploy', {
@@ -163,7 +167,7 @@ class Infrastructure extends Construct {
 
       destinationBucket: apiBucket,
       // create this folder (src/functions/source) with zip file "source" when deploying for first time otherwise it will fail
-      sources: [s3deploy.Source.asset('./src/functions/source')],
+      sources: [s3deploy.Source.asset(API_SOURCE_ZIP)],
     });
 
     const pipeline = new codepipeline.Pipeline(this, 'Pipeline', {
