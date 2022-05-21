@@ -13,7 +13,7 @@ const handler: APIGatewayProxyHandler = async () => {
     return {
       body: JSON.stringify({
         erorrs: [],
-        message: 'Saved',
+        message: 'Saved!',
         success: true,
       }),
       statusCode: 200,
@@ -27,7 +27,7 @@ const handler: APIGatewayProxyHandler = async () => {
             stackTrace: error instanceof Error ? error.message : null,
           },
         ],
-        message: 'Failed to save',
+        message: 'Failed to save.',
         success: false,
       }),
       statusCode: 500,

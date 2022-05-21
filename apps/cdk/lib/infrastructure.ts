@@ -306,7 +306,7 @@ class Infrastructure extends Construct {
     deployActionProject.addToRolePolicy(
       new iam.PolicyStatement({
         actions: ['lambda:UpdateFunctionCode', 's3:GetObject'],
-        resources: [logLambda.functionArn, apiBucket.bucketArn],
+        resources: [logLambda.functionArn, `${apiBucket.bucketArn}/source`],
       }),
     );
 
