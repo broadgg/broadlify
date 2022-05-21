@@ -200,6 +200,9 @@ class Infrastructure extends Construct {
         buildSpec: codebuild.BuildSpec.fromSourceFilename(
           'apps/cdk/lib/buildspec.yml',
         ),
+        environment: {
+          buildImage: codebuild.LinuxBuildImage.STANDARD_5_0,
+        },
         projectName: 'Website',
       }),
     });
