@@ -20,7 +20,7 @@ import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 import { Construct } from 'constructs';
 
 const WEB_SOURCE_DIRECTORY = path.join(__dirname, '../../frontend/dist');
-const API_SOURCE_ZIP = path.join(__dirname, '../../api/dist/source');
+const API_SOURCE_DIRECTORY = path.join(__dirname, '../../api/dist/source');
 const DOMAIN_NAME = 'marekvargovcik.com';
 const API_DOMAIN_NAME = `api.${DOMAIN_NAME}`;
 
@@ -163,11 +163,8 @@ class Infrastructure extends Construct {
     });
 
     const apiDeployment = new s3deploy.BucketDeployment(this, 'ApiDeploy', {
-      contentType: 'application/zip',
-
       destinationBucket: apiBucket,
-      // create this folder (src/functions/source) with zip file "source" when deploying for first time otherwise it will fail
-      sources: [s3deploy.Source.asset(API_SOURCE_ZIP)],
+      sources: [s3deploy.Source.asset(API_SOURCE_DIRECTORY)],
     });
 
     const pipeline = new codepipeline.Pipeline(this, 'Pipeline', {

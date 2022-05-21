@@ -9,10 +9,6 @@
   "name": "@broadlify/monorepo",
   "packageManager": "npm@8.1.2",
   "scripts": {
-    "all:build": "turbo run build -parallel",
-    "all:dev": "turbo run dev --parallel",
-    "all:lint": "turbo run lint --parallel",
-    "all:lint:fix": "turbo run lint:fix --parallel",
     "api:build": "turbo run build --scope=\"@broadlify/api\"",
     "api:dev": "turbo run dev --scope=\"@broadlify/api\"",
     "api:lint": "turbo run lint --scope=\"@broadlify/api\"",

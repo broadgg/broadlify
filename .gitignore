@@ -13,5 +13,5 @@ node_modules
 .env
 # output dir
 dist
-# api build artifact
+# api build artifact (generated on first deploy)
 apps/api/dist/source

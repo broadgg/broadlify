@@ -5,7 +5,9 @@
     "source-map-support": "^0.5.21"
   },
   "devDependencies": {
+    "@broadlify/api": "*",
     "@broadlify/config": "*",
+    "@broadlify/frontend": "*",
     "@types/node": "^17.0.35",
     "@types/source-map-support": "^0.5.4",
     "ts-node": "^10.7.0",
@@ -14,7 +16,7 @@
   "name": "@broadlify/cdk",
   "scripts": {
     "build": "tsc",
-    "deploy": "cdk deploy",
+    "deploy": "cdk deploy --require-approval never",
     "dev": "tsc --watch",
     "lint": "eslint bin lib",
     "lint:fix": "eslint --fix bin lib"

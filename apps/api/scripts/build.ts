@@ -34,5 +34,12 @@ const OUTPUT_DIRECTORY = path.join(__dirname, '../dist');
     target: 'node14',
   });
 
-  shell.exec(`cd ${OUTPUT_DIRECTORY} && zip -Ar source *.js`);
+  const commands = [
+    `cd ${OUTPUT_DIRECTORY}`,
+    'mkdir source',
+    'cd source',
+    'zip -Ar source ../*.js',
+  ];
+
+  shell.exec(commands.join(' && '));
 })();

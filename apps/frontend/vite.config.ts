@@ -11,9 +11,6 @@ const config = defineConfig({
       '@': path.resolve(path.dirname(fileURLToPath(import.meta.url)), 'src'),
     },
   },
-  server: {
-    port: 3_001,
-  },
 });
 
 export default config;
