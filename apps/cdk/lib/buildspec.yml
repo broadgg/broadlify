@@ -8,15 +8,16 @@ phases:
       - npm install
   build:
     commands:
-      - npm run build
+      - npm run frontend:build
+      - npm run api:build
 
 artifacts:
   secondary-artifacts:
     website:
-      base-directory: src/web
+      base-directory: apps/frontend/dist
       files:
         - '**/*'
     api:
-      base-directory: src/functions
+      base-directory: apps/api/dist
       files:
-        - '**/*.js'
+        - '*.js'

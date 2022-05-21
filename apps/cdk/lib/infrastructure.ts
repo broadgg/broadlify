@@ -11,6 +11,7 @@ import * as codepipelineActions from 'aws-cdk-lib/aws-codepipeline-actions';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
+import type { FunctionOptions } from 'aws-cdk-lib/aws-lambda';
 import * as rds from 'aws-cdk-lib/aws-rds';
 import * as route53 from 'aws-cdk-lib/aws-route53';
 import * as targets from 'aws-cdk-lib/aws-route53-targets';
@@ -227,13 +228,22 @@ class Infrastructure extends Construct {
       stageName: 'Deploy',
     });
 
-    const greetingLambda = new lambda.Function(this, 'greetingLambda', {
+    const lambdaEnvironment: FunctionOptions['environment'] = {
+      DB_HOSTNAME: database.clusterEndpoint.hostname,
+      DB_NAME: 'aws_db',
+      DB_PASSWORD: rdsPassword.toString(),
+      DB_PORT: database.clusterEndpoint.port.toString(),
+      DB_USER: rdsUsername.toString(),
+    };
+
+    const logLambda = new lambda.Function(this, 'logLambda', {
       code: lambda.Code.fromBucket(apiBucket, 'source'),
-      handler: 'greeting.handler',
+      environment: lambdaEnvironment,
+      handler: 'log.handler',
       runtime: lambda.Runtime.NODEJS_14_X,
     });
 
-    greetingLambda.node.addDependency(apiDeployment);
+    logLambda.node.addDependency(apiDeployment);
 
     const api = new apiGateway.RestApi(this, 'api', {
       domainName: {
@@ -244,7 +254,7 @@ class Infrastructure extends Construct {
       restApiName: 'api',
     });
 
-    api.root.addMethod('GET', new apiGateway.LambdaIntegration(greetingLambda));
+    api.root.addMethod('GET', new apiGateway.LambdaIntegration(logLambda));
 
     new route53.ARecord(this, 'ApiAliasRecord', {
       recordName: API_DOMAIN_NAME,
