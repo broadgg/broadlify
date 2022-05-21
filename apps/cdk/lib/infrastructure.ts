@@ -20,6 +20,8 @@ import * as s3deploy from 'aws-cdk-lib/aws-s3-deployment';
 import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 import { Construct } from 'constructs';
 
+import * as buildspecs from './buildspecs';
+
 const WEB_SOURCE_DIRECTORY = path.join(__dirname, '../../frontend/dist');
 const API_SOURCE_DIRECTORY = path.join(__dirname, '../../api/dist/source');
 const DOMAIN_NAME = 'marekvargovcik.com';
@@ -29,6 +31,7 @@ class Infrastructure extends Construct {
   constructor(scope: Construct, name: string) {
     super(scope, name);
 
+    // credentials
     const secrets = secretsmanager.Secret.fromSecretNameV2(
       this,
       'Secrets',
@@ -38,6 +41,7 @@ class Infrastructure extends Construct {
     const rdsUsername = secrets.secretValueFromJson('rdsUsername');
     const rdsPassword = secrets.secretValueFromJson('rdsPassword');
 
+    // networking
     const vpc = new ec2.Vpc(this, 'Vpc', {
       cidr: '10.0.0.0/16',
       maxAzs: 2,
@@ -66,6 +70,7 @@ class Infrastructure extends Construct {
       vpcName: 'broadlify-vpc',
     });
 
+    // database
     const database = new rds.DatabaseCluster(this, 'Rds', {
       credentials: rds.Credentials.fromPassword(
         rdsUsername.toString(),
@@ -88,6 +93,7 @@ class Infrastructure extends Construct {
     // opens 3306 port
     database.connections.allowDefaultPortFromAnyIpv4();
 
+    // buckets, certificates and CDN
     const zone = route53.HostedZone.fromLookup(this, 'Zone', {
       domainName: DOMAIN_NAME,
     });
@@ -156,6 +162,7 @@ class Infrastructure extends Construct {
       zone,
     });
 
+    // deployment of local assets (api, frontend)
     new s3deploy.BucketDeployment(this, 'DeployWithInvalidation', {
       destinationBucket: siteBucket,
       distribution,
@@ -168,6 +175,41 @@ class Infrastructure extends Construct {
       sources: [s3deploy.Source.asset(API_SOURCE_DIRECTORY)],
     });
 
+    // api
+    const lambdaEnvironment: FunctionOptions['environment'] = {
+      DB_HOSTNAME: database.clusterEndpoint.hostname,
+      DB_NAME: 'aws_db',
+      DB_PASSWORD: rdsPassword.toString(),
+      DB_PORT: database.clusterEndpoint.port.toString(),
+      DB_USER: rdsUsername.toString(),
+    };
+
+    const logLambda = new lambda.Function(this, 'logLambda', {
+      code: lambda.Code.fromBucket(apiBucket, 'source'),
+      environment: lambdaEnvironment,
+      handler: 'log.handler',
+      runtime: lambda.Runtime.NODEJS_14_X,
+    });
+    logLambda.node.addDependency(apiDeployment);
+
+    const api = new apiGateway.RestApi(this, 'api', {
+      domainName: {
+        certificate,
+        domainName: API_DOMAIN_NAME,
+        endpointType: apiGateway.EndpointType.EDGE,
+      },
+      restApiName: 'api',
+    });
+
+    api.root.addMethod('GET', new apiGateway.LambdaIntegration(logLambda));
+
+    new route53.ARecord(this, 'ApiAliasRecord', {
+      recordName: API_DOMAIN_NAME,
+      target: route53.RecordTarget.fromAlias(new targets.ApiGateway(api)),
+      zone,
+    });
+
+    // ci/cd
     const pipeline = new codepipeline.Pipeline(this, 'Pipeline', {
       crossAccountKeys: true,
     });
@@ -197,13 +239,13 @@ class Infrastructure extends Construct {
       input: repositorySource,
       outputs: [websiteOutput, apiOutput],
       project: new codebuild.PipelineProject(this, 'BuildWebsite', {
-        buildSpec: codebuild.BuildSpec.fromSourceFilename(
-          'apps/cdk/lib/buildspec.yml',
+        buildSpec: codebuild.BuildSpec.fromObject(
+          buildspecs.createBuildBuildspec(),
         ),
         environment: {
           buildImage: codebuild.LinuxBuildImage.STANDARD_5_0,
         },
-        projectName: 'Website',
+        projectName: 'Build',
       }),
     });
 
@@ -212,13 +254,14 @@ class Infrastructure extends Construct {
       stageName: 'Build',
     });
 
-    const websiteDeployStage = new codepipelineActions.S3DeployAction({
-      actionName: 'Website',
-      bucket: siteBucket,
-      input: websiteOutput,
-    });
+    const uploadWebsiteArtifactToS3Action =
+      new codepipelineActions.S3DeployAction({
+        actionName: 'Website',
+        bucket: siteBucket,
+        input: websiteOutput,
+      });
 
-    const apiDeployStage = new codepipelineActions.S3DeployAction({
+    const uploadApiArtifactToS3Action = new codepipelineActions.S3DeployAction({
       actionName: 'Api',
       bucket: apiBucket,
       extract: false,
@@ -227,42 +270,30 @@ class Infrastructure extends Construct {
     });
 
     pipeline.addStage({
-      actions: [websiteDeployStage, apiDeployStage],
+      actions: [uploadWebsiteArtifactToS3Action, uploadApiArtifactToS3Action],
+      stageName: 'Upload',
+    });
+
+    const deployAction = new codepipelineActions.CodeBuildAction({
+      actionName: 'Deploy',
+      input: repositorySource,
+      project: new codebuild.PipelineProject(this, 'DeployApi', {
+        buildSpec: codebuild.BuildSpec.fromObject(
+          buildspecs.createDeployBuildspec({
+            cloudfrontId: distribution.distributionId,
+            functionNames: [logLambda.functionName],
+          }),
+        ),
+        environment: {
+          buildImage: codebuild.LinuxBuildImage.STANDARD_5_0,
+        },
+        projectName: 'Deploy',
+      }),
+    });
+
+    pipeline.addStage({
+      actions: [deployAction],
       stageName: 'Deploy',
-    });
-
-    const lambdaEnvironment: FunctionOptions['environment'] = {
-      DB_HOSTNAME: database.clusterEndpoint.hostname,
-      DB_NAME: 'aws_db',
-      DB_PASSWORD: rdsPassword.toString(),
-      DB_PORT: database.clusterEndpoint.port.toString(),
-      DB_USER: rdsUsername.toString(),
-    };
-
-    const logLambda = new lambda.Function(this, 'logLambda', {
-      code: lambda.Code.fromBucket(apiBucket, 'source'),
-      environment: lambdaEnvironment,
-      handler: 'log.handler',
-      runtime: lambda.Runtime.NODEJS_14_X,
-    });
-
-    logLambda.node.addDependency(apiDeployment);
-
-    const api = new apiGateway.RestApi(this, 'api', {
-      domainName: {
-        certificate,
-        domainName: API_DOMAIN_NAME,
-        endpointType: apiGateway.EndpointType.EDGE,
-      },
-      restApiName: 'api',
-    });
-
-    api.root.addMethod('GET', new apiGateway.LambdaIntegration(logLambda));
-
-    new route53.ARecord(this, 'ApiAliasRecord', {
-      recordName: API_DOMAIN_NAME,
-      target: route53.RecordTarget.fromAlias(new targets.ApiGateway(api)),
-      zone,
     });
   }
 }
