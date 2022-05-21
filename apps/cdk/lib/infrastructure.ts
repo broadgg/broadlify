@@ -30,6 +30,7 @@ const API_DOMAIN_NAME = `api.${DOMAIN_NAME}`;
 type InfrastructureProps = {
   accountId: string;
 };
+
 class Infrastructure extends Construct {
   constructor(scope: Construct, name: string, props: InfrastructureProps) {
     super(scope, name);
