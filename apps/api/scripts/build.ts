@@ -27,7 +27,6 @@ const OUTPUT_DIRECTORY = path.join(__dirname, '../dist');
     bundle: true,
     entryPoints: functions,
     format: 'cjs',
-    minify: true,
     outdir: OUTPUT_DIRECTORY,
     platform: 'node',
     sourcemap: 'inline',
