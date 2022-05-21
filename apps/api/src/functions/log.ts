@@ -7,7 +7,7 @@ import { database } from '../utils';
 const handler: APIGatewayProxyHandler = async () => {
   try {
     await database.execute(
-      'INSERT INTO accessLogs (ipAddress, userAgent) VALUES(?)',
+      'INSERT INTO accessLogs (ipAddress, userAgent) VALUES(?, ?)',
       ['should be ip address', 'should be user agent'],
     );
     return {
