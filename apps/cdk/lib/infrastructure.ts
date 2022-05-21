@@ -27,8 +27,11 @@ const API_SOURCE_DIRECTORY = path.join(__dirname, '../../api/dist/source');
 const DOMAIN_NAME = 'marekvargovcik.com';
 const API_DOMAIN_NAME = `api.${DOMAIN_NAME}`;
 
+type InfrastructureProps = {
+  accountId: string;
+};
 class Infrastructure extends Construct {
-  constructor(scope: Construct, name: string) {
+  constructor(scope: Construct, name: string, props: InfrastructureProps) {
     super(scope, name);
 
     // credentials
@@ -274,10 +277,10 @@ class Infrastructure extends Construct {
       stageName: 'Upload',
     });
 
-    const deployAction = new codepipelineActions.CodeBuildAction({
-      actionName: 'Deploy',
-      input: repositorySource,
-      project: new codebuild.PipelineProject(this, 'DeployApi', {
+    const deployActionProject = new codebuild.PipelineProject(
+      this,
+      'DeployApi',
+      {
         buildSpec: codebuild.BuildSpec.fromObject(
           buildspecs.createDeployBuildspec({
             cloudfrontId: distribution.distributionId,
@@ -288,7 +291,29 @@ class Infrastructure extends Construct {
           buildImage: codebuild.LinuxBuildImage.STANDARD_5_0,
         },
         projectName: 'Deploy',
+      },
+    );
+
+    const distributionArn = `arn:aws:cloudfront::${props.accountId}:distribution/${distribution.distributionId}`;
+
+    deployActionProject.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ['cloudfront:CreateInvalidation'],
+        resources: [distributionArn],
       }),
+    );
+
+    deployActionProject.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ['lambda:UpdateFunctionCode', 's3:GetObject'],
+        resources: [logLambda.functionArn, apiBucket.bucketArn],
+      }),
+    );
+
+    const deployAction = new codepipelineActions.CodeBuildAction({
+      actionName: 'Deploy',
+      input: repositorySource,
+      project: deployActionProject,
     });
 
     pipeline.addStage({

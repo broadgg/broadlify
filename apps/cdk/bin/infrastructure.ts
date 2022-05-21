@@ -7,7 +7,9 @@ import { Infrastructure } from '../lib/infrastructure';
 class InfrastructureStack extends cdk.Stack {
   constructor(parent: cdk.App, name: string, props: cdk.StackProps) {
     super(parent, name, props);
-    new Infrastructure(this, 'Infrastructure');
+    new Infrastructure(this, 'Infrastructure', {
+      accountId: this.node.tryGetContext('accountId'),
+    });
   }
 }
 
