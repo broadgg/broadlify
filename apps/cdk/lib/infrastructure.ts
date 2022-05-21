@@ -198,7 +198,7 @@ class Infrastructure extends Construct {
       outputs: [websiteOutput, apiOutput],
       project: new codebuild.PipelineProject(this, 'BuildWebsite', {
         buildSpec: codebuild.BuildSpec.fromSourceFilename(
-          './lib/buildspec.yml',
+          'apps/cdk/lib/buildspec.yml',
         ),
         projectName: 'Website',
       }),
