@@ -299,15 +299,16 @@ class Infrastructure extends Construct {
 
     deployActionProject.addToRolePolicy(
       new iam.PolicyStatement({
-        actions: ['cloudfront:CreateInvalidation'],
-        resources: [distributionArn],
-      }),
-    );
-
-    deployActionProject.addToRolePolicy(
-      new iam.PolicyStatement({
-        actions: ['lambda:UpdateFunctionCode', 's3:GetObject'],
-        resources: [logLambda.functionArn, `${apiBucket.bucketArn}/source`],
+        actions: [
+          'cloudfront:CreateInvalidation',
+          'lambda:UpdateFunctionCode',
+          's3:GetObject',
+        ],
+        resources: [
+          distributionArn,
+          logLambda.functionArn,
+          `${apiBucket.bucketArn}/source`,
+        ],
       }),
     );
 
