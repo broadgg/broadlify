@@ -12,12 +12,11 @@ const ZIP_BUNDLE_ENTRIES = ['src', '.env', '.npmrc', 'package.json'];
   });
 
   const commands = [
+    `mkdir ${OUTPUT_DIRECTORY}`,
     `cd ${OUTPUT_DIRECTORY}`,
-    'mkdir source',
-    'cd source',
-    `zip -Ar source ${ZIP_BUNDLE_ENTRIES.map((entry) =>
-      path.join(__dirname, `../${entry}`),
-    ).join(' ')}`,
+    `zip -Ar source.zip ${ZIP_BUNDLE_ENTRIES.map((entry) => `../${entry}`).join(
+      ' ',
+    )}`,
   ];
 
   shell.exec(commands.join(' && '));
