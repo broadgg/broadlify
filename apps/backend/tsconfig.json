@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "noEmit": true
+  },
+  "exclude": [
+    "node_modules"
+  ],
+  "extends": "../../packages/config/tsconfig.base.json",
+  "include": [
+    "scripts",
+    "src"
+  ]
+}

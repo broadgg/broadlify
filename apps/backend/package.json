@@ -1,0 +1,17 @@
+{
+  "name": "@broadlify/backend",
+  "version": "0.0.0",
+  "scripts": {
+    "start": "directus bootstrap && directus start"
+  },
+  "dependencies": {
+    "directus": "^9.11.0",
+    "build": "tsc && ts-node scripts/build.ts"
+  },
+  "devDependencies": {
+    "@broadlify/config": "*",
+    "@types/node": "^17.0.35",
+    "esbuild": "^0.14.39",
+    "ts-node": "^10.8.0"
+  }
+}
