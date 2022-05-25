@@ -2,8 +2,19 @@ import * as shell from 'node:child_process';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 
-const OUTPUT_DIRECTORY = path.join(__dirname, '../dist');
-const ZIP_BUNDLE_ENTRIES = ['src', '.env', '.npmrc', 'package.json'];
+import * as esbuild from 'esbuild';
+
+const OUTPUT_DIRECTORY = path.join(__dirname, '../dist/source');
+const SCRIPTS_DIRECTORY = __dirname;
+const ROOT_DIRECTORY = path.join(__dirname, '../');
+const ZIP_BUNDLE_ENTRIES = [
+  'src',
+  '.env',
+  '.npmrc',
+  'package.json',
+  'uploads',
+  '.platform',
+];
 
 (async () => {
   await fs.rm(OUTPUT_DIRECTORY, {
@@ -11,12 +22,36 @@ const ZIP_BUNDLE_ENTRIES = ['src', '.env', '.npmrc', 'package.json'];
     recursive: true,
   });
 
+  const files = await fs.readdir(SCRIPTS_DIRECTORY);
+
+  const functions = files.flatMap((filename) => {
+    if (filename === 'build.ts') {
+      return [];
+    }
+
+    if (filename.endsWith('.ts')) {
+      return [`${SCRIPTS_DIRECTORY}/${filename}`];
+    }
+
+    return [];
+  });
+
+  await esbuild.build({
+    bundle: true,
+    entryPoints: functions,
+    format: 'cjs',
+    outdir: `${path.join(OUTPUT_DIRECTORY, 'scripts')}`,
+    platform: 'node',
+    sourcemap: 'inline',
+    target: 'node14',
+  });
+
   const commands = [
-    `mkdir ${OUTPUT_DIRECTORY}`,
+    `cd ${ROOT_DIRECTORY}`,
+    `zip -Ar source ${ZIP_BUNDLE_ENTRIES.join(' ')}`,
+    `mv source ${OUTPUT_DIRECTORY}`,
     `cd ${OUTPUT_DIRECTORY}`,
-    `zip -Ar source.zip ${ZIP_BUNDLE_ENTRIES.map((entry) => `../${entry}`).join(
-      ' ',
-    )}`,
+    `zip -Ar source scripts`,
   ];
 
   shell.exec(commands.join(' && '));

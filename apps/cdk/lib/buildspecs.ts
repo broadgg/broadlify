@@ -5,6 +5,10 @@ const createBuildBuildspec = () => ({
         'base-directory': 'apps/api/dist',
         files: ['*.js'],
       },
+      backend: {
+        'base-directory': 'apps/backend/dist',
+        files: ['**/*'],
+      },
       website: {
         'base-directory': 'apps/frontend/dist',
         files: ['**/*'],
@@ -13,7 +17,11 @@ const createBuildBuildspec = () => ({
   },
   phases: {
     build: {
-      commands: ['npm run frontend:build', 'npm run api:build'],
+      commands: [
+        'npm run frontend:build',
+        'npm run api:build',
+        'npm run backend:build',
+      ],
     },
     install: {
       commands: ['npm install -g npm@latest', 'npm install'],

@@ -22,8 +22,10 @@
     "frontend:dev": "turbo run dev --scope=\"@broadlify/frontend\"",
     "frontend:lint": "turbo run lint --scope=\"@broadlify/frontend\"",
     "frontend:lint:fix": "turbo run lint:fix --scope=\"@broadlify/frontend\"",
-    "backend:build":"turbo run build --scope=\"@broadlify/backend\"",
-    "backend:start":"turbo run start --scope=\"@broadlify/backend\""
+    "backend:build": "turbo run build --scope=\"@broadlify/backend\"",
+    "backend:start": "turbo run start --scope=\"@broadlify/backend\"",
+    "backend:lint": "turbo run lint --scope=\"@broadlify/backend\"",
+    "backend:lint:fix": "turbo run lint:fix --scope=\"@broadlify/backend\""
   },
   "version": "0.0.0",
   "workspaces": [

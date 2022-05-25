@@ -9,6 +9,7 @@ import * as codebuild from 'aws-cdk-lib/aws-codebuild';
 import * as codepipeline from 'aws-cdk-lib/aws-codepipeline';
 import * as codepipelineActions from 'aws-cdk-lib/aws-codepipeline-actions';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
+import * as elasticbeanstalk from 'aws-cdk-lib/aws-elasticbeanstalk';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import type { FunctionOptions } from 'aws-cdk-lib/aws-lambda';
@@ -24,8 +25,13 @@ import * as buildspecs from './buildspecs';
 
 const WEB_SOURCE_DIRECTORY = path.join(__dirname, '../../frontend/dist');
 const API_SOURCE_DIRECTORY = path.join(__dirname, '../../api/dist/source');
+const BACKEND_SOURCE_DIRECTORY = path.join(
+  __dirname,
+  '../../backend/dist/source',
+);
 const DOMAIN_NAME = 'marekvargovcik.com';
 const API_DOMAIN_NAME = `api.${DOMAIN_NAME}`;
+// const BACKEND_DOMAIN_NAME = `backend.${DOMAIN_NAME}`;
 
 type InfrastructureProps = {
   accountId: string;
@@ -122,6 +128,22 @@ class Infrastructure extends Construct {
       removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 
+    const backendBucket = new s3.Bucket(this, 'BackendBucket', {
+      autoDeleteObjects: true,
+      blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
+      bucketName: `${DOMAIN_NAME}-backend`,
+      publicReadAccess: false,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
+
+    // const fileStorageBucket = new s3.Bucket(this, 'FileStorageBucket', {
+    //   autoDeleteObjects: true,
+    //   blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
+    //   bucketName: `${DOMAIN_NAME}-file-storage`,
+    //   publicReadAccess: false,
+    //   removalPolicy: cdk.RemovalPolicy.DESTROY,
+    // });
+
     siteBucket.addToResourcePolicy(
       new iam.PolicyStatement({
         actions: ['s3:GetObject'],
@@ -166,7 +188,7 @@ class Infrastructure extends Construct {
       zone,
     });
 
-    // deployment of local assets (api, frontend)
+    // deployment of local assets (api, frontend, backend)
     new s3deploy.BucketDeployment(this, 'DeployWithInvalidation', {
       destinationBucket: siteBucket,
       distribution,
@@ -178,6 +200,15 @@ class Infrastructure extends Construct {
       destinationBucket: apiBucket,
       sources: [s3deploy.Source.asset(API_SOURCE_DIRECTORY)],
     });
+
+    const backendDeployment = new s3deploy.BucketDeployment(
+      this,
+      'BackendDeploy',
+      {
+        destinationBucket: backendBucket,
+        sources: [s3deploy.Source.asset(BACKEND_SOURCE_DIRECTORY)],
+      },
+    );
 
     // api
     const lambdaEnvironment: FunctionOptions['environment'] = {
@@ -213,6 +244,137 @@ class Infrastructure extends Construct {
       zone,
     });
 
+    // backend
+    const role = new iam.Role(this, `${name}-aws-elasticbeanstalk-ec2-role`, {
+      assumedBy: new iam.ServicePrincipal('ec2.amazonaws.com'),
+    });
+
+    const managedPolicy = iam.ManagedPolicy.fromAwsManagedPolicyName(
+      'AWSElasticBeanstalkWebTier',
+    );
+    role.addManagedPolicy(managedPolicy);
+
+    const profileName = `${name}-Directus-InstanceProfile`;
+    new iam.CfnInstanceProfile(this, profileName, {
+      instanceProfileName: profileName,
+      roles: [role.roleName],
+    });
+
+    const app = new elasticbeanstalk.CfnApplication(this, 'Application', {
+      applicationName: `${name}-Directus-App`,
+    });
+
+    const appVersionProps = new elasticbeanstalk.CfnApplicationVersion(
+      this,
+      'ApplicationVersion',
+      {
+        applicationName: `${name}-Directus-App`,
+        sourceBundle: {
+          s3Bucket: backendBucket.bucketName,
+          s3Key: 'source',
+        },
+      },
+    );
+    appVersionProps.node.addDependency(backendDeployment);
+    appVersionProps.addDependsOn(app);
+
+    const optionSettingProperties: elasticbeanstalk.CfnEnvironment.OptionSettingProperty[] =
+      [
+        {
+          namespace: 'aws:autoscaling:launchconfiguration',
+          optionName: 'InstanceType',
+          value: 't2.medium',
+        },
+        {
+          namespace: 'aws:autoscaling:asg',
+          optionName: 'MinSize',
+          value: '1',
+        },
+        {
+          namespace: 'aws:autoscaling:asg',
+          optionName: 'MaxSize',
+          value: '1',
+        },
+        {
+          namespace: 'aws:autoscaling:launchconfiguration',
+          optionName: 'IamInstanceProfile',
+          value: profileName,
+        },
+        {
+          namespace: 'aws:elasticbeanstalk:application:environment',
+          optionName: 'DB_CLIENT',
+          value: 'mysql',
+        },
+        {
+          namespace: 'aws:elasticbeanstalk:application:environment',
+          optionName: 'DB_HOST',
+          value: database.clusterEndpoint.hostname,
+        },
+        {
+          namespace: 'aws:elasticbeanstalk:application:environment',
+          optionName: 'DB_PORT',
+          value: database.clusterEndpoint.port.toString(),
+        },
+        {
+          namespace: 'aws:elasticbeanstalk:application:environment',
+          optionName: 'DB_DATABASE',
+          value: 'directus',
+        },
+        {
+          namespace: 'aws:elasticbeanstalk:application:environment',
+          optionName: 'DB_USER',
+          value: rdsUsername.toString(),
+        },
+        {
+          namespace: 'aws:elasticbeanstalk:application:environment',
+          optionName: 'DB_PASSWORD',
+          value: rdsPassword.toString(),
+        },
+        // {
+        //   namespace: 'aws:elasticbeanstalk:application:environment',
+        //   optionName: 'STORAGE_LOCATIONS',
+        //   value: 's3',
+        // },
+        // {
+        //   namespace: 'aws:elasticbeanstalk:application:environment',
+        //   optionName: 'STORAGE_S3_DRIVER',
+        //   value: 's3',
+        // },
+        // {
+        //   namespace: 'aws:elasticbeanstalk:application:environment',
+        //   optionName: 'STORAGE_S3_KEY',
+        //   value: '',
+        // },
+        // {
+        //   namespace: 'aws:elasticbeanstalk:application:environment',
+        //   optionName: 'STORAGE_S3_SECRET',
+        //   value: '',
+        // },
+        // {
+        //   namespace: 'aws:elasticbeanstalk:application:environment',
+        //   optionName: 'STORAGE_S3_BUCKET',
+        //   value: fileStorageBucket.bucketName,
+        // },
+        // {
+        //   namespace: 'aws:elasticbeanstalk:application:environment',
+        //   optionName: 'STORAGE_S3_REGION',
+        //   value: '',
+        // },
+      ];
+
+    const node = this.node;
+    const platform = node.tryGetContext('platform');
+    const env = new elasticbeanstalk.CfnEnvironment(this, 'Environment', {
+      applicationName: `${name}-Directus-App`,
+      environmentName: `${name}-Directus-Env`,
+      optionSettings: optionSettingProperties,
+      platformArn: platform,
+      solutionStackName: '64bit Amazon Linux 2 v5.5.2 running Node.js 14',
+      versionLabel: appVersionProps.ref,
+    });
+    env.node.addDependency(database);
+    env.addDependsOn(app);
+
     // ci/cd
     const pipeline = new codepipeline.Pipeline(this, 'Pipeline', {
       crossAccountKeys: true,
@@ -237,11 +399,16 @@ class Infrastructure extends Construct {
 
     const websiteOutput = new codepipeline.Artifact('website');
     const apiOutput = new codepipeline.Artifact('api');
+    // const backendOutput = new codepipeline.Artifact('backend');
 
     const buildStage = new codepipelineActions.CodeBuildAction({
       actionName: 'Build',
       input: repositorySource,
-      outputs: [websiteOutput, apiOutput],
+      outputs: [
+        websiteOutput,
+        apiOutput,
+        // backendOutput
+      ],
       project: new codebuild.PipelineProject(this, 'BuildWebsite', {
         buildSpec: codebuild.BuildSpec.fromObject(
           buildspecs.createBuildBuildspec(),
@@ -273,8 +440,21 @@ class Infrastructure extends Construct {
       objectKey: 'source',
     });
 
+    // const uploadBackendArtifactToS3Action =
+    //   new codepipelineActions.S3DeployAction({
+    //     actionName: 'Backend',
+    //     bucket: backendBucket,
+    //     extract: false,
+    //     input: backendOutput,
+    //     objectKey: 'source',
+    //   });
+
     pipeline.addStage({
-      actions: [uploadWebsiteArtifactToS3Action, uploadApiArtifactToS3Action],
+      actions: [
+        uploadWebsiteArtifactToS3Action,
+        uploadApiArtifactToS3Action,
+        // uploadBackendArtifactToS3Action,
+      ],
       stageName: 'Upload',
     });
 

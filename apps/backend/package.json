@@ -2,11 +2,16 @@
   "name": "@broadlify/backend",
   "version": "0.0.0",
   "scripts": {
-    "start": "directus bootstrap && directus start",
-    "build": "tsc && ts-node scripts/build.ts"
+    "bootstrap": "directus bootstrap",
+    "start": "directus start",
+    "build": "tsc && ts-node scripts/build.ts",
+    "lint": "echo 'nothing to lint'",
+    "lint:fix": "eslint --fix src"
   },
   "dependencies": {
-    "directus": "^9.11.0"
+    "directus": "^9.11.0",
+    "dotenv": "^16.0.1",
+    "mysql2": "^2.3.3"
   },
   "devDependencies": {
     "@broadlify/config": "*",
