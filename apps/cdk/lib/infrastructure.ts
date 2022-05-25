@@ -11,6 +11,7 @@ import * as codepipelineActions from 'aws-cdk-lib/aws-codepipeline-actions';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as elasticbeanstalk from 'aws-cdk-lib/aws-elasticbeanstalk';
 import * as iam from 'aws-cdk-lib/aws-iam';
+import { ManagedPolicy } from 'aws-cdk-lib/aws-iam';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import type { FunctionOptions } from 'aws-cdk-lib/aws-lambda';
 import * as rds from 'aws-cdk-lib/aws-rds';
@@ -136,14 +137,6 @@ class Infrastructure extends Construct {
       removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 
-    // const fileStorageBucket = new s3.Bucket(this, 'FileStorageBucket', {
-    //   autoDeleteObjects: true,
-    //   blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
-    //   bucketName: `${DOMAIN_NAME}-file-storage`,
-    //   publicReadAccess: false,
-    //   removalPolicy: cdk.RemovalPolicy.DESTROY,
-    // });
-
     siteBucket.addToResourcePolicy(
       new iam.PolicyStatement({
         actions: ['s3:GetObject'],
@@ -260,6 +253,29 @@ class Infrastructure extends Construct {
       roles: [role.roleName],
     });
 
+    const s3User = new iam.User(this, 'S3User', {
+      userName: `${name}-s3-user`,
+    });
+    s3User.addManagedPolicy(
+      ManagedPolicy.fromManagedPolicyArn(
+        this,
+        'S3AccessPolicy',
+        'arn:aws:iam::aws:policy/AmazonS3FullAccess',
+      ),
+    );
+
+    const s3AccessKey = new iam.CfnAccessKey(this, 'S3AccessKey', {
+      userName: s3User.userName,
+    });
+
+    const fileStorageBucket = new s3.Bucket(this, 'FileStorageBucket', {
+      autoDeleteObjects: true,
+      blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
+      bucketName: `${DOMAIN_NAME}-file-storage`,
+      publicReadAccess: false,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
+
     const app = new elasticbeanstalk.CfnApplication(this, 'Application', {
       applicationName: `${name}-Directus-App`,
     });
@@ -330,36 +346,36 @@ class Infrastructure extends Construct {
           optionName: 'DB_PASSWORD',
           value: rdsPassword.toString(),
         },
-        // {
-        //   namespace: 'aws:elasticbeanstalk:application:environment',
-        //   optionName: 'STORAGE_LOCATIONS',
-        //   value: 's3',
-        // },
-        // {
-        //   namespace: 'aws:elasticbeanstalk:application:environment',
-        //   optionName: 'STORAGE_S3_DRIVER',
-        //   value: 's3',
-        // },
-        // {
-        //   namespace: 'aws:elasticbeanstalk:application:environment',
-        //   optionName: 'STORAGE_S3_KEY',
-        //   value: '',
-        // },
-        // {
-        //   namespace: 'aws:elasticbeanstalk:application:environment',
-        //   optionName: 'STORAGE_S3_SECRET',
-        //   value: '',
-        // },
-        // {
-        //   namespace: 'aws:elasticbeanstalk:application:environment',
-        //   optionName: 'STORAGE_S3_BUCKET',
-        //   value: fileStorageBucket.bucketName,
-        // },
-        // {
-        //   namespace: 'aws:elasticbeanstalk:application:environment',
-        //   optionName: 'STORAGE_S3_REGION',
-        //   value: '',
-        // },
+        {
+          namespace: 'aws:elasticbeanstalk:application:environment',
+          optionName: 'STORAGE_LOCATIONS',
+          value: 's3',
+        },
+        {
+          namespace: 'aws:elasticbeanstalk:application:environment',
+          optionName: 'STORAGE_S3_DRIVER',
+          value: 's3',
+        },
+        {
+          namespace: 'aws:elasticbeanstalk:application:environment',
+          optionName: 'STORAGE_S3_KEY',
+          value: s3AccessKey.ref,
+        },
+        {
+          namespace: 'aws:elasticbeanstalk:application:environment',
+          optionName: 'STORAGE_S3_SECRET',
+          value: s3AccessKey.attrSecretAccessKey,
+        },
+        {
+          namespace: 'aws:elasticbeanstalk:application:environment',
+          optionName: 'STORAGE_S3_BUCKET',
+          value: fileStorageBucket.bucketName,
+        },
+        {
+          namespace: 'aws:elasticbeanstalk:application:environment',
+          optionName: 'STORAGE_S3_REGION',
+          value: REGION,
+        },
       ];
 
     const node = this.node;
