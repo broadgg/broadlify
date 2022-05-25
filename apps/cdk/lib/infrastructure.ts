@@ -31,8 +31,8 @@ const BACKEND_SOURCE_DIRECTORY = path.join(
 );
 const DOMAIN_NAME = 'marekvargovcik.com';
 const API_DOMAIN_NAME = `api.${DOMAIN_NAME}`;
-// const BACKEND_DOMAIN_NAME = `backend.${DOMAIN_NAME}`;
-
+const BACKEND_DOMAIN_NAME = `admin.${DOMAIN_NAME}`;
+const REGION = 'us-east-1';
 type InfrastructureProps = {
   accountId: string;
 };
@@ -162,8 +162,8 @@ class Infrastructure extends Construct {
       {
         domainName: DOMAIN_NAME,
         hostedZone: zone,
-        region: 'us-east-1',
-        subjectAlternativeNames: [API_DOMAIN_NAME],
+        region: REGION,
+        subjectAlternativeNames: [API_DOMAIN_NAME, BACKEND_DOMAIN_NAME],
       },
     );
 
@@ -264,7 +264,7 @@ class Infrastructure extends Construct {
       applicationName: `${name}-Directus-App`,
     });
 
-    const appVersionProps = new elasticbeanstalk.CfnApplicationVersion(
+    const appVersion = new elasticbeanstalk.CfnApplicationVersion(
       this,
       'ApplicationVersion',
       {
@@ -275,8 +275,8 @@ class Infrastructure extends Construct {
         },
       },
     );
-    appVersionProps.node.addDependency(backendDeployment);
-    appVersionProps.addDependsOn(app);
+    appVersion.node.addDependency(backendDeployment);
+    appVersion.addDependsOn(app);
 
     const optionSettingProperties: elasticbeanstalk.CfnEnvironment.OptionSettingProperty[] =
       [
@@ -370,7 +370,7 @@ class Infrastructure extends Construct {
       optionSettings: optionSettingProperties,
       platformArn: platform,
       solutionStackName: '64bit Amazon Linux 2 v5.5.2 running Node.js 14',
-      versionLabel: appVersionProps.ref,
+      versionLabel: appVersion.ref,
     });
     env.node.addDependency(database);
     env.addDependsOn(app);

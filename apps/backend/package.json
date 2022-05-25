@@ -4,9 +4,7 @@
   "scripts": {
     "bootstrap": "directus bootstrap",
     "start": "directus start",
-    "build": "tsc && ts-node scripts/build.ts",
-    "lint": "echo 'nothing to lint'",
-    "lint:fix": "eslint --fix src"
+    "build": "tsc && ts-node scripts/build.ts"
   },
   "dependencies": {
     "directus": "^9.11.0",
