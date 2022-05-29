@@ -1,0 +1,29 @@
+{
+  "dependencies": {
+    "@remix-run/architect": "^1.5.1",
+    "@remix-run/express": "^1.5.1",
+    "@remix-run/node": "^1.5.1",
+    "@remix-run/react": "^1.5.1",
+    "express": "^4.18.1",
+    "react": "^18.1.0",
+    "react-dom": "^18.1.0"
+  },
+  "devDependencies": {
+    "@remix-run/dev": "^1.5.1",
+    "@types/react": "^17.0.45",
+    "@types/react-dom": "^17.0.17",
+    "concurrently": "^7.2.1",
+    "eslint": "^8.15.0",
+    "nodemon": "^2.0.16",
+    "ts-node": "^10.8.0",
+    "typescript": "^4.6.4"
+  },
+  "name": "@broadlify/remix",
+  "scripts": {
+    "build": "remix build",
+    "dev": "remix build && concurrently -n remix:server,remix:watch \"nodemon server/express.ts --watch\" \"remix watch\"",
+    "lint": "eslint src",
+    "lint:fix": "eslint --fix src"
+  },
+  "version": "0.0.0"
+}

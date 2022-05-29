@@ -6,9 +6,10 @@
   },
   "devDependencies": {
     "@broadlify/api": "*",
-    "@broadlify/config": "*",
-    "@broadlify/frontend": "*",
     "@broadlify/backend": "*",
+    "@broadlify/config": "*",
+    "@broadlify/react": "*",
+    "@broadlify/remix": "*",
     "@types/node": "^17.0.35",
     "@types/source-map-support": "^0.5.4",
     "ts-node": "^10.7.0",

@@ -2,7 +2,9 @@
   "pipeline": {
     "build": {
       "outputs": [
-        "dist/**"
+        "dist/**",
+        "build/**",
+        "public/build/**"
       ]
     },
     "deploy": {

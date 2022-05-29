@@ -13,7 +13,7 @@
     "typescript": "^4.6.4",
     "vite": "^2.9.9"
   },
-  "name": "@broadlify/frontend",
+  "name": "@broadlify/react",
   "scripts": {
     "build": "tsc && vite build",
     "dev": "vite",
