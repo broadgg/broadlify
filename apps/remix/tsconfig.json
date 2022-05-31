@@ -18,12 +18,9 @@
     "target": "es2019"
   },
   "extends": "../../packages/config/tsconfig.base.json",
-  "exclude": [
-    "remix.config.js"
-  ],
   "include": [
-    "server/**/*.ts",
-    "src/**/*.ts",
-    "src/**/*.tsx"
+    "scripts",
+    "server",
+    "src"
   ]
 }
