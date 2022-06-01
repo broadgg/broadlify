@@ -5,6 +5,7 @@ const config = {
 
 if (process.env.NODE_ENV === 'production') {
   config.server = 'server/lambda.ts';
+  config.publicPath = 'https://remix.marekvargovcik.com/assets/';
 }
 
 module.exports = config;
