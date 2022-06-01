@@ -1,5 +1,7 @@
 import * as path from 'node:path';
 
+import * as apiGatewayV2Alpha from '@aws-cdk/aws-apigatewayv2-alpha';
+import * as apiGatewayV2AlphaIntegrations from '@aws-cdk/aws-apigatewayv2-integrations-alpha';
 import * as cdk from 'aws-cdk-lib';
 import * as apiGateway from 'aws-cdk-lib/aws-apigateway';
 import * as acm from 'aws-cdk-lib/aws-certificatemanager';
@@ -28,6 +30,8 @@ const SOURCE_DIRECTORIES = {
   API: path.join(__dirname, '../../api/dist/source'),
   NEXTJS_CLIENT: path.join(__dirname, '../../nextjs-client/dist'),
   REACT: path.join(__dirname, '../../react/dist'),
+  REMIX: path.join(__dirname, '../../remix/build/source'),
+  REMIX_ASSETS: path.join(__dirname, '../../remix/public'),
 };
 
 // const BACKEND_SOURCE_DIRECTORY = path.join(
@@ -179,7 +183,6 @@ class Infrastructure extends Construct {
       zone,
     });
 
-    // deployment of local assets (api, react, backend)
     new s3deploy.BucketDeployment(this, 'reactBucketDeployment', {
       destinationBucket: reactBucket,
       distribution: reactDistribution,
@@ -231,7 +234,7 @@ class Infrastructure extends Construct {
           viewerProtocolPolicy:
             cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
         },
-        defaultRootObject: 'index.html',
+        defaultRootObject: 'home.html',
         domainNames: [NEXTJS_CLIENT_DOMAIN_NAME],
       },
     );
@@ -249,6 +252,140 @@ class Infrastructure extends Construct {
       distribution: nextjsClientDistribution,
       distributionPaths: ['/*'],
       sources: [s3deploy.Source.asset(SOURCE_DIRECTORIES.NEXTJS_CLIENT)],
+    });
+
+    // remix
+    const remixBuildBucket = new s3.Bucket(this, 'remixBuildBucket', {
+      autoDeleteObjects: true,
+      blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
+      bucketName: REMIX_DOMAIN_NAME,
+      publicReadAccess: false,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
+
+    remixBuildBucket.addToResourcePolicy(
+      new iam.PolicyStatement({
+        actions: ['s3:GetObject'],
+        principals: [
+          new iam.CanonicalUserPrincipal(
+            cloudfrontOAI.cloudFrontOriginAccessIdentityS3CanonicalUserId,
+          ),
+        ],
+        resources: [remixBuildBucket.arnForObjects('*')],
+      }),
+    );
+
+    const remixBuildDeployment = new s3deploy.BucketDeployment(
+      this,
+      'remixBuildBucketDeployment',
+      {
+        destinationBucket: remixBuildBucket,
+        sources: [s3deploy.Source.asset(SOURCE_DIRECTORIES.REMIX)],
+      },
+    );
+
+    const remixLambda = new lambda.Function(this, 'remixLambda', {
+      code: lambda.Code.fromBucket(remixBuildBucket, 'source'),
+      handler: 'index.handler',
+      runtime: lambda.Runtime.NODEJS_14_X,
+      timeout: cdk.Duration.seconds(10),
+    });
+    remixLambda.node.addDependency(remixBuildDeployment);
+
+    const remixHttpApi = new apiGatewayV2Alpha.HttpApi(this, 'remixHttpApi', {
+      defaultIntegration:
+        new apiGatewayV2AlphaIntegrations.HttpLambdaIntegration(
+          'remixHttpApiIntegration',
+          remixLambda,
+          {
+            payloadFormatVersion:
+              apiGatewayV2Alpha.PayloadFormatVersion.VERSION_2_0,
+          },
+        ),
+    });
+
+    const remixHttpApiUrl = `${remixHttpApi.httpApiId}.execute-api.${
+      cdk.Stack.of(this).region
+    }.${cdk.Stack.of(this).urlSuffix}`;
+
+    const remixAssetsBucket = new s3.Bucket(this, 'remixAssetsBucket', {
+      autoDeleteObjects: true,
+      bucketName: `${REMIX_DOMAIN_NAME}-assets`,
+      publicReadAccess: true,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
+
+    remixAssetsBucket.addToResourcePolicy(
+      new iam.PolicyStatement({
+        actions: ['s3:GetObject'],
+        principals: [
+          new iam.CanonicalUserPrincipal(
+            cloudfrontOAI.cloudFrontOriginAccessIdentityS3CanonicalUserId,
+          ),
+        ],
+        resources: [remixAssetsBucket.arnForObjects('*')],
+      }),
+    );
+
+    const remixCertificate = new acm.DnsValidatedCertificate(
+      this,
+      'remixCertificate',
+      {
+        domainName: REMIX_DOMAIN_NAME,
+        hostedZone: zone,
+        region: 'us-east-1',
+      },
+    );
+
+    const remixDistribution = new cloudfront.Distribution(
+      this,
+      'remixDistribution',
+      {
+        additionalBehaviors: {
+          '/assets/*': {
+            allowedMethods: cloudfront.AllowedMethods.ALLOW_GET_HEAD_OPTIONS,
+            origin: new cloudfrontOrigins.S3Origin(remixAssetsBucket, {
+              originAccessIdentity: cloudfrontOAI,
+            }),
+          },
+        },
+        certificate: remixCertificate,
+        defaultBehavior: {
+          allowedMethods: cloudfront.AllowedMethods.ALLOW_ALL,
+          cachePolicy: cloudfront.CachePolicy.CACHING_DISABLED,
+          origin: new cloudfrontOrigins.HttpOrigin(remixHttpApiUrl),
+          originRequestPolicy: new cloudfront.OriginRequestPolicy(
+            this,
+            'remixOriginRequestPolicy',
+            {
+              cookieBehavior: cloudfront.OriginRequestCookieBehavior.all(),
+              // https://stackoverflow.com/questions/65243953/pass-query-params-from-cloudfront-to-api-gateway
+              headerBehavior: cloudfront.OriginRequestHeaderBehavior.none(),
+              originRequestPolicyName: 'remixOriginRequestPolicyName',
+              queryStringBehavior:
+                cloudfront.OriginRequestQueryStringBehavior.all(),
+            },
+          ),
+          viewerProtocolPolicy:
+            cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+        },
+        domainNames: [REMIX_DOMAIN_NAME],
+      },
+    );
+
+    new route53.ARecord(this, 'remixARecord', {
+      recordName: REMIX_DOMAIN_NAME,
+      target: route53.RecordTarget.fromAlias(
+        new targets.CloudFrontTarget(remixDistribution),
+      ),
+      zone,
+    });
+
+    new s3deploy.BucketDeployment(this, 'remixAssetsBucketDeployment', {
+      destinationBucket: remixAssetsBucket,
+      distribution: remixDistribution,
+      distributionPaths: ['/assets/*'],
+      sources: [s3deploy.Source.asset(SOURCE_DIRECTORIES.REMIX_ASSETS)],
     });
 
     // api
@@ -293,16 +430,18 @@ class Infrastructure extends Construct {
       },
     );
 
-    const api = new apiGateway.RestApi(this, 'api', {
+    const api = new apiGateway.LambdaRestApi(this, 'api', {
       domainName: {
         certificate: apiCertificate,
         domainName: API_DOMAIN_NAME,
         endpointType: apiGateway.EndpointType.EDGE,
       },
+      handler: logLambda,
+      proxy: false,
       restApiName: 'api',
     });
 
-    api.root.addMethod('GET', new apiGateway.LambdaIntegration(logLambda));
+    api.root.addMethod('GET');
 
     new route53.ARecord(this, 'apiARecord', {
       recordName: API_DOMAIN_NAME,
@@ -506,6 +645,8 @@ class Infrastructure extends Construct {
     const apiOutput = new codepipeline.Artifact('api');
     const reactOutput = new codepipeline.Artifact('reactOutput');
     const nextjsClientOutput = new codepipeline.Artifact('nextjsClientOutput');
+    const remixBuildOutput = new codepipeline.Artifact('remixBuildOutput');
+    const remixAssetsOutput = new codepipeline.Artifact('remixAssetsOutput');
     // const backendOutput = new codepipeline.Artifact('backend');
 
     const buildStage = new codepipelineActions.CodeBuildAction({
@@ -515,6 +656,8 @@ class Infrastructure extends Construct {
         apiOutput,
         reactOutput,
         nextjsClientOutput,
+        remixBuildOutput,
+        remixAssetsOutput,
         // backendOutput
       ],
       project: new codebuild.PipelineProject(this, 'project', {
@@ -555,6 +698,22 @@ class Infrastructure extends Construct {
         input: nextjsClientOutput,
       });
 
+    const uploadRemixBuildArtifactToS3Action =
+      new codepipelineActions.S3DeployAction({
+        actionName: 'uploadRemixBuildAction',
+        bucket: remixBuildBucket,
+        extract: false,
+        input: remixBuildOutput,
+        objectKey: 'source',
+      });
+
+    const uploadRemixAssetsArtifactToS3Action =
+      new codepipelineActions.S3DeployAction({
+        actionName: 'uploadRemixAssetsAction',
+        bucket: remixAssetsBucket,
+        input: remixAssetsOutput,
+      });
+
     // const uploadBackendArtifactToS3Action =
     //   new codepipelineActions.S3DeployAction({
     //     actionName: 'Backend',
@@ -569,6 +728,8 @@ class Infrastructure extends Construct {
         uploadApiArtifactToS3Action,
         uploadReactArtifactToS3Action,
         uploadNextJsClientArtifactToS3Action,
+        uploadRemixBuildArtifactToS3Action,
+        uploadRemixAssetsArtifactToS3Action,
         // uploadBackendArtifactToS3Action,
       ],
       stageName: 'Upload',
@@ -580,8 +741,32 @@ class Infrastructure extends Construct {
       {
         buildSpec: codebuild.BuildSpec.fromObject(
           buildspecs.createDeployBuildspec({
-            cloudfrontId: reactDistribution.distributionId,
-            functionNames: [logLambda.functionName],
+            distributions: [
+              {
+                id: reactDistribution.distributionId,
+                path: '/*',
+              },
+              {
+                id: remixDistribution.distributionId,
+                path: '/*',
+              },
+              {
+                id: nextjsClientDistribution.distributionId,
+                path: '/*',
+              },
+            ],
+            functions: [
+              {
+                bucket: apiBucket.bucketName,
+                key: 'source',
+                name: logLambda.functionName,
+              },
+              {
+                bucket: remixBuildBucket.bucketName,
+                key: 'source',
+                name: remixLambda.functionName,
+              },
+            ],
           }),
         ),
         environment: {
@@ -591,7 +776,9 @@ class Infrastructure extends Construct {
       },
     );
 
-    const distributionArn = `arn:aws:cloudfront::${props.accountId}:distribution/${reactDistribution.distributionId}`;
+    const reactDistributionArn = `arn:aws:cloudfront::${props.accountId}:distribution/${reactDistribution.distributionId}`;
+    const nextJsClientDistributionArn = `arn:aws:cloudfront::${props.accountId}:distribution/${nextjsClientDistribution.distributionId}`;
+    const remixDistributionArn = `arn:aws:cloudfront::${props.accountId}:distribution/${remixDistribution.distributionId}`;
 
     deployActionProject.addToRolePolicy(
       new iam.PolicyStatement({
@@ -601,9 +788,13 @@ class Infrastructure extends Construct {
           's3:GetObject',
         ],
         resources: [
-          distributionArn,
+          reactDistributionArn,
+          nextJsClientDistributionArn,
+          remixDistributionArn,
           logLambda.functionArn,
+          remixLambda.functionArn,
           `${apiBucket.bucketArn}/source`,
+          `${remixBuildBucket.bucketArn}/source`,
         ],
       }),
     );
