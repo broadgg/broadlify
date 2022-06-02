@@ -26,6 +26,8 @@ import { Construct } from 'constructs';
 
 import * as buildspecs from './buildspecs';
 
+const addWWWSuffix = (domain: string) => `www.${domain}`;
+
 const SOURCE_DIRECTORIES = {
   API: path.join(__dirname, '../../api/dist/source'),
   NEXTJS_CLIENT: path.join(__dirname, '../../nextjs-client/dist'),
@@ -154,6 +156,7 @@ class Infrastructure extends Construct {
         domainName: REACT_DOMAIN_NAME,
         hostedZone: zone,
         region: 'us-east-1',
+        subjectAlternativeNames: [addWWWSuffix(REACT_DOMAIN_NAME)],
       },
     );
 
@@ -171,7 +174,8 @@ class Infrastructure extends Construct {
             cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
         },
         defaultRootObject: 'index.html',
-        domainNames: [REACT_DOMAIN_NAME],
+        domainNames: [REACT_DOMAIN_NAME, addWWWSuffix(REACT_DOMAIN_NAME)],
+        enableLogging: true,
       },
     );
 
@@ -180,6 +184,12 @@ class Infrastructure extends Construct {
       target: route53.RecordTarget.fromAlias(
         new targets.CloudFrontTarget(reactDistribution),
       ),
+      zone,
+    });
+
+    new route53.CnameRecord(this, 'reactCnameRecord', {
+      domainName: REACT_DOMAIN_NAME,
+      recordName: addWWWSuffix(REACT_DOMAIN_NAME),
       zone,
     });
 
@@ -218,6 +228,7 @@ class Infrastructure extends Construct {
         domainName: NEXTJS_CLIENT_DOMAIN_NAME,
         hostedZone: zone,
         region: 'us-east-1',
+        subjectAlternativeNames: [addWWWSuffix(NEXTJS_CLIENT_DOMAIN_NAME)],
       },
     );
 
@@ -235,7 +246,11 @@ class Infrastructure extends Construct {
             cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
         },
         defaultRootObject: 'home.html',
-        domainNames: [NEXTJS_CLIENT_DOMAIN_NAME],
+        domainNames: [
+          NEXTJS_CLIENT_DOMAIN_NAME,
+          addWWWSuffix(NEXTJS_CLIENT_DOMAIN_NAME),
+        ],
+        enableLogging: true,
       },
     );
 
@@ -244,6 +259,12 @@ class Infrastructure extends Construct {
       target: route53.RecordTarget.fromAlias(
         new targets.CloudFrontTarget(nextjsClientDistribution),
       ),
+      zone,
+    });
+
+    new route53.CnameRecord(this, 'nextjsClientCnameRecord', {
+      domainName: NEXTJS_CLIENT_DOMAIN_NAME,
+      recordName: addWWWSuffix(NEXTJS_CLIENT_DOMAIN_NAME),
       zone,
     });
 
@@ -334,6 +355,7 @@ class Infrastructure extends Construct {
         domainName: REMIX_DOMAIN_NAME,
         hostedZone: zone,
         region: 'us-east-1',
+        subjectAlternativeNames: [addWWWSuffix(REMIX_DOMAIN_NAME)],
       },
     );
 
@@ -369,7 +391,8 @@ class Infrastructure extends Construct {
           viewerProtocolPolicy:
             cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
         },
-        domainNames: [REMIX_DOMAIN_NAME],
+        domainNames: [REMIX_DOMAIN_NAME, addWWWSuffix(REMIX_DOMAIN_NAME)],
+        enableLogging: true,
       },
     );
 
@@ -378,6 +401,12 @@ class Infrastructure extends Construct {
       target: route53.RecordTarget.fromAlias(
         new targets.CloudFrontTarget(remixDistribution),
       ),
+      zone,
+    });
+
+    new route53.CnameRecord(this, 'remixCnameRecord', {
+      domainName: REMIX_DOMAIN_NAME,
+      recordName: addWWWSuffix(REMIX_DOMAIN_NAME),
       zone,
     });
 
@@ -427,6 +456,7 @@ class Infrastructure extends Construct {
         domainName: API_DOMAIN_NAME,
         hostedZone: zone,
         region: 'us-east-1',
+        subjectAlternativeNames: [addWWWSuffix(API_DOMAIN_NAME)],
       },
     );
 
@@ -446,6 +476,12 @@ class Infrastructure extends Construct {
     new route53.ARecord(this, 'apiARecord', {
       recordName: API_DOMAIN_NAME,
       target: route53.RecordTarget.fromAlias(new targets.ApiGateway(api)),
+      zone,
+    });
+
+    new route53.CnameRecord(this, 'apiCnameRecord', {
+      domainName: API_DOMAIN_NAME,
+      recordName: addWWWSuffix(API_DOMAIN_NAME),
       zone,
     });
 
