@@ -11,9 +11,8 @@ import * as codebuild from 'aws-cdk-lib/aws-codebuild';
 import * as codepipeline from 'aws-cdk-lib/aws-codepipeline';
 import * as codepipelineActions from 'aws-cdk-lib/aws-codepipeline-actions';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
-// import * as elasticbeanstalk from 'aws-cdk-lib/aws-elasticbeanstalk';
+import * as elasticbeanstalk from 'aws-cdk-lib/aws-elasticbeanstalk';
 import * as iam from 'aws-cdk-lib/aws-iam';
-// import { ManagedPolicy } from 'aws-cdk-lib/aws-iam';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import type { FunctionOptions } from 'aws-cdk-lib/aws-lambda';
 import * as rds from 'aws-cdk-lib/aws-rds';
@@ -30,20 +29,16 @@ const addWWWSuffix = (domain: string) => `www.${domain}`;
 
 const SOURCE_DIRECTORIES = {
   API: path.join(__dirname, '../../api/dist/source'),
+  BACKEND: path.join(__dirname, '../../backend/dist/source'),
   NEXTJS_CLIENT: path.join(__dirname, '../../nextjs-client/dist'),
   REACT: path.join(__dirname, '../../react/dist'),
   REMIX: path.join(__dirname, '../../remix/build/source'),
   REMIX_ASSETS: path.join(__dirname, '../../remix/public'),
 };
 
-// const BACKEND_SOURCE_DIRECTORY = path.join(
-//   __dirname,
-//   '../../backend/dist/source',
-// );
-
 const DOMAIN_NAME = 'marekvargovcik.com';
 const API_DOMAIN_NAME = `api.${DOMAIN_NAME}`;
-// const BACKEND_DOMAIN_NAME = `backend.${DOMAIN_NAME}`;
+const BACKEND_DOMAIN_NAME = `backend.${DOMAIN_NAME}`;
 const REACT_DOMAIN_NAME = `react.${DOMAIN_NAME}`;
 const NEXTJS_CLIENT_DOMAIN_NAME = `nextjs-client.${DOMAIN_NAME}`;
 const NEXTJS_SERVER_DOMAIN_NAME = `nextjs-server.${DOMAIN_NAME}`;
@@ -486,175 +481,230 @@ class Infrastructure extends Construct {
     });
 
     // backend
-    // const backendBucket = new s3.Bucket(this, 'BackendBucket', {
-    //   autoDeleteObjects: true,
-    //   blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
-    //   bucketName: `${DOMAIN_NAME}-backend`,
-    //   publicReadAccess: false,
-    //   removalPolicy: cdk.RemovalPolicy.DESTROY,
-    // });
+    const backendBucket = new s3.Bucket(this, 'BackendBucket', {
+      autoDeleteObjects: true,
+      blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
+      bucketName: `${DOMAIN_NAME}-backend`,
+      publicReadAccess: false,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
 
-    // const backendDeployment = new s3deploy.BucketDeployment(
-    //   this,
-    //   'BackendDeploy',
-    //   {
-    //     destinationBucket: backendBucket,
-    //     sources: [s3deploy.Source.asset(BACKEND_SOURCE_DIRECTORY)],
-    //   },
-    // );
+    const backendDeployment = new s3deploy.BucketDeployment(
+      this,
+      'BackendDeploy',
+      {
+        destinationBucket: backendBucket,
+        sources: [s3deploy.Source.asset(SOURCE_DIRECTORIES.BACKEND)],
+      },
+    );
 
-    // const role = new iam.Role(this, `${name}-aws-elasticbeanstalk-ec2-role`, {
-    //   assumedBy: new iam.ServicePrincipal('ec2.amazonaws.com'),
-    // });
+    const role = new iam.Role(this, `${name}-aws-elasticbeanstalk-ec2-role`, {
+      assumedBy: new iam.ServicePrincipal('ec2.amazonaws.com'),
+    });
 
-    // const managedPolicy = iam.ManagedPolicy.fromAwsManagedPolicyName(
-    //   'AWSElasticBeanstalkWebTier',
-    // );
-    // role.addManagedPolicy(managedPolicy);
+    const managedPolicy = iam.ManagedPolicy.fromAwsManagedPolicyName(
+      'AWSElasticBeanstalkWebTier',
+    );
+    role.addManagedPolicy(managedPolicy);
 
-    // const profileName = `${name}-Directus-InstanceProfile`;
-    // new iam.CfnInstanceProfile(this, profileName, {
-    //   instanceProfileName: profileName,
-    //   roles: [role.roleName],
-    // });
+    const profileName = `${name}-Directus-InstanceProfile`;
+    new iam.CfnInstanceProfile(this, profileName, {
+      instanceProfileName: profileName,
+      roles: [role.roleName],
+    });
 
-    // const s3User = new iam.User(this, 'S3User', {
-    //   userName: `${name}-s3-user`,
-    // });
-    // s3User.addManagedPolicy(
-    //   ManagedPolicy.fromManagedPolicyArn(
-    //     this,
-    //     'S3AccessPolicy',
-    //     'arn:aws:iam::aws:policy/AmazonS3FullAccess',
-    //   ),
-    // );
+    const s3User = new iam.User(this, 'S3User', {
+      userName: `${name}-s3-user`,
+    });
+    s3User.addManagedPolicy(
+      iam.ManagedPolicy.fromManagedPolicyArn(
+        this,
+        'S3AccessPolicy',
+        'arn:aws:iam::aws:policy/AmazonS3FullAccess',
+      ),
+    );
 
-    // const s3AccessKey = new iam.CfnAccessKey(this, 'S3AccessKey', {
-    //   userName: s3User.userName,
-    // });
+    const s3AccessKey = new iam.CfnAccessKey(this, 'S3AccessKey', {
+      userName: s3User.userName,
+    });
 
-    // const fileStorageBucket = new s3.Bucket(this, 'FileStorageBucket', {
-    //   autoDeleteObjects: true,
-    //   blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
-    //   bucketName: `${DOMAIN_NAME}-file-storage`,
-    //   publicReadAccess: false,
-    //   removalPolicy: cdk.RemovalPolicy.DESTROY,
-    // });
+    const fileStorageBucket = new s3.Bucket(this, 'FileStorageBucket', {
+      autoDeleteObjects: true,
+      blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
+      bucketName: `${DOMAIN_NAME}-file-storage`,
+      publicReadAccess: false,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
 
-    // const app = new elasticbeanstalk.CfnApplication(this, 'Application', {
-    //   applicationName: `${name}-Directus-App`,
-    // });
+    const app = new elasticbeanstalk.CfnApplication(this, 'Application', {
+      applicationName: `${name}-Directus-App`,
+    });
 
-    // const appVersion = new elasticbeanstalk.CfnApplicationVersion(
-    //   this,
-    //   'ApplicationVersion',
-    //   {
-    //     applicationName: `${name}-Directus-App`,
-    //     sourceBundle: {
-    //       s3Bucket: backendBucket.bucketName,
-    //       s3Key: 'source',
-    //     },
-    //   },
-    // );
-    // appVersion.node.addDependency(backendDeployment);
-    // appVersion.addDependsOn(app);
+    const appVersion = new elasticbeanstalk.CfnApplicationVersion(
+      this,
+      'ApplicationVersion',
+      {
+        applicationName: `${name}-Directus-App`,
+        sourceBundle: {
+          s3Bucket: backendBucket.bucketName,
+          s3Key: 'source',
+        },
+      },
+    );
+    appVersion.node.addDependency(backendDeployment);
+    appVersion.addDependsOn(app);
 
-    // const optionSettingProperties: elasticbeanstalk.CfnEnvironment.OptionSettingProperty[] =
-    //   [
-    //     {
-    //       namespace: 'aws:autoscaling:launchconfiguration',
-    //       optionName: 'InstanceType',
-    //       value: 't2.medium',
-    //     },
-    //     {
-    //       namespace: 'aws:autoscaling:asg',
-    //       optionName: 'MinSize',
-    //       value: '1',
-    //     },
-    //     {
-    //       namespace: 'aws:autoscaling:asg',
-    //       optionName: 'MaxSize',
-    //       value: '1',
-    //     },
-    //     {
-    //       namespace: 'aws:autoscaling:launchconfiguration',
-    //       optionName: 'IamInstanceProfile',
-    //       value: profileName,
-    //     },
-    //     {
-    //       namespace: 'aws:elasticbeanstalk:application:environment',
-    //       optionName: 'DB_CLIENT',
-    //       value: 'mysql',
-    //     },
-    //     {
-    //       namespace: 'aws:elasticbeanstalk:application:environment',
-    //       optionName: 'DB_HOST',
-    //       value: database.clusterEndpoint.hostname,
-    //     },
-    //     {
-    //       namespace: 'aws:elasticbeanstalk:application:environment',
-    //       optionName: 'DB_PORT',
-    //       value: database.clusterEndpoint.port.toString(),
-    //     },
-    //     {
-    //       namespace: 'aws:elasticbeanstalk:application:environment',
-    //       optionName: 'DB_DATABASE',
-    //       value: 'directus',
-    //     },
-    //     {
-    //       namespace: 'aws:elasticbeanstalk:application:environment',
-    //       optionName: 'DB_USER',
-    //       value: rdsUsername.toString(),
-    //     },
-    //     {
-    //       namespace: 'aws:elasticbeanstalk:application:environment',
-    //       optionName: 'DB_PASSWORD',
-    //       value: rdsPassword.toString(),
-    //     },
-    //     {
-    //       namespace: 'aws:elasticbeanstalk:application:environment',
-    //       optionName: 'STORAGE_LOCATIONS',
-    //       value: 's3',
-    //     },
-    //     {
-    //       namespace: 'aws:elasticbeanstalk:application:environment',
-    //       optionName: 'STORAGE_S3_DRIVER',
-    //       value: 's3',
-    //     },
-    //     {
-    //       namespace: 'aws:elasticbeanstalk:application:environment',
-    //       optionName: 'STORAGE_S3_KEY',
-    //       value: s3AccessKey.ref,
-    //     },
-    //     {
-    //       namespace: 'aws:elasticbeanstalk:application:environment',
-    //       optionName: 'STORAGE_S3_SECRET',
-    //       value: s3AccessKey.attrSecretAccessKey,
-    //     },
-    //     {
-    //       namespace: 'aws:elasticbeanstalk:application:environment',
-    //       optionName: 'STORAGE_S3_BUCKET',
-    //       value: fileStorageBucket.bucketName,
-    //     },
-    //     {
-    //       namespace: 'aws:elasticbeanstalk:application:environment',
-    //       optionName: 'STORAGE_S3_REGION',
-    //       value: REGION,
-    //     },
-    //   ];
+    const backendCertificate = new acm.DnsValidatedCertificate(
+      this,
+      'backendCertificate',
+      {
+        domainName: BACKEND_DOMAIN_NAME,
+        hostedZone: zone,
+        region: 'us-east-1',
+        subjectAlternativeNames: [addWWWSuffix(BACKEND_DOMAIN_NAME)],
+      },
+    );
 
-    // const node = this.node;
-    // const platform = node.tryGetContext('platform');
-    // const env = new elasticbeanstalk.CfnEnvironment(this, 'Environment', {
-    //   applicationName: `${name}-Directus-App`,
-    //   environmentName: `${name}-Directus-Env`,
-    //   optionSettings: optionSettingProperties,
-    //   platformArn: platform,
-    //   solutionStackName: '64bit Amazon Linux 2 v5.5.2 running Node.js 14',
-    //   versionLabel: appVersion.ref,
-    // });
-    // env.node.addDependency(database);
-    // env.addDependsOn(app);
+    const optionSettingProperties: elasticbeanstalk.CfnEnvironment.OptionSettingProperty[] =
+      [
+        {
+          namespace: 'aws:autoscaling:launchconfiguration',
+          optionName: 'InstanceType',
+          value: 't2.medium',
+        },
+        {
+          namespace: 'aws:autoscaling:asg',
+          optionName: 'MinSize',
+          value: '1',
+        },
+        {
+          namespace: 'aws:autoscaling:asg',
+          optionName: 'MaxSize',
+          value: '1',
+        },
+        {
+          namespace: 'aws:autoscaling:launchconfiguration',
+          optionName: 'IamInstanceProfile',
+          value: profileName,
+        },
+        // {
+        //   namespace: 'aws:elb:listener:80',
+        //   optionName: 'SSLCertificateId',
+        //   value: backendCertificate.certificateArn,
+        // },
+        // {
+        //   namespace: 'aws:elb:listener:80',
+        //   optionName: 'ListenerProtocol',
+        //   value: 'HTTPS',
+        // },
+        // {
+        //   namespace: 'aws:elb:listener:80',
+        //   optionName: 'InstancePort',
+        //   value: '80',
+        // },
+        {
+          namespace: 'aws:ec2:vpc',
+          optionName: 'VPCId',
+          value: vpc.vpcId,
+        },
+        {
+          namespace: 'aws:ec2:vpc',
+          optionName: 'ELBSubnets',
+          value: vpc.publicSubnets.map((value) => value.subnetId).join(','),
+        },
+        {
+          namespace: 'aws:ec2:vpc',
+          optionName: 'Subnets',
+          value: vpc.privateSubnets.map((value) => value.subnetId).join(','),
+        },
+        {
+          namespace: 'aws:elasticbeanstalk:application:environment',
+          optionName: 'DB_CLIENT',
+          value: 'mysql',
+        },
+        {
+          namespace: 'aws:elasticbeanstalk:application:environment',
+          optionName: 'DB_HOST',
+          value: database.clusterEndpoint.hostname,
+        },
+        {
+          namespace: 'aws:elasticbeanstalk:application:environment',
+          optionName: 'DB_PORT',
+          value: database.clusterEndpoint.port.toString(),
+        },
+        {
+          namespace: 'aws:elasticbeanstalk:application:environment',
+          optionName: 'DB_DATABASE',
+          value: 'directus',
+        },
+        {
+          namespace: 'aws:elasticbeanstalk:application:environment',
+          optionName: 'DB_USER',
+          value: rdsUsername.toString(),
+        },
+        {
+          namespace: 'aws:elasticbeanstalk:application:environment',
+          optionName: 'DB_PASSWORD',
+          value: rdsPassword.toString(),
+        },
+        {
+          namespace: 'aws:elasticbeanstalk:application:environment',
+          optionName: 'STORAGE_LOCATIONS',
+          value: 's3',
+        },
+        {
+          namespace: 'aws:elasticbeanstalk:application:environment',
+          optionName: 'STORAGE_S3_DRIVER',
+          value: 's3',
+        },
+        {
+          namespace: 'aws:elasticbeanstalk:application:environment',
+          optionName: 'STORAGE_S3_KEY',
+          value: s3AccessKey.ref,
+        },
+        {
+          namespace: 'aws:elasticbeanstalk:application:environment',
+          optionName: 'STORAGE_S3_SECRET',
+          value: s3AccessKey.attrSecretAccessKey,
+        },
+        {
+          namespace: 'aws:elasticbeanstalk:application:environment',
+          optionName: 'STORAGE_S3_BUCKET',
+          value: fileStorageBucket.bucketName,
+        },
+        {
+          namespace: 'aws:elasticbeanstalk:application:environment',
+          optionName: 'STORAGE_S3_REGION',
+          value: 'us-east-1',
+        },
+      ];
+
+    const node = this.node;
+    const platform = node.tryGetContext('platform');
+    const env = new elasticbeanstalk.CfnEnvironment(this, 'Environment', {
+      applicationName: `${name}-Directus-App`,
+      environmentName: `${name}-Directus-Env`,
+      optionSettings: optionSettingProperties,
+      platformArn: platform,
+      solutionStackName: '64bit Amazon Linux 2 v5.5.2 running Node.js 14',
+      versionLabel: appVersion.ref,
+    });
+    env.node.addDependency(database);
+    env.node.addDependency(backendCertificate);
+    env.addDependsOn(app);
+
+    const backendARecord = new route53.ARecord(this, 'backendARecord', {
+      recordName: BACKEND_DOMAIN_NAME,
+      target: route53.RecordTarget.fromAlias({
+        bind: (): route53.AliasRecordTargetConfig => ({
+          dnsName: env.attrEndpointUrl,
+          // us-east-1 hostedZoneId for load balanced environments https://docs.aws.amazon.com/general/latest/gr/elb.html
+          hostedZoneId: 'Z35SXDOTRQ7X7K',
+        }),
+      }),
+      zone,
+    });
+    backendARecord.node.addDependency(env);
 
     // ci/cd
     const pipeline = new codepipeline.Pipeline(this, 'pipeline', {
