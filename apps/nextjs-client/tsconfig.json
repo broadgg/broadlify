@@ -1,0 +1,28 @@
+{
+  "compilerOptions": {
+    "allowJs": false,
+    "baseUrl": ".",
+    "jsx": "preserve",
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
+    "module": "esnext",
+    "moduleResolution": "node",
+    "noEmit": true,
+    "paths": {
+      "@/*": [
+        "src/*"
+      ]
+    },
+    "target": "es5"
+  },
+  "exclude": [
+    "next.config.js"
+  ],
+  "extends": "../../packages/config/tsconfig.base.json",
+  "include": [
+    "src"
+  ]
+}
