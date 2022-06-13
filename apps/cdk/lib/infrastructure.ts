@@ -39,6 +39,7 @@ const DOMAIN_NAME = 'marekvargovcik.com';
 const API_DOMAIN_NAME = `api.${DOMAIN_NAME}`;
 const REACT_DOMAIN_NAME = `react.${DOMAIN_NAME}`;
 const NEXTJS_CLIENT_DOMAIN_NAME = `nextjs-client.${DOMAIN_NAME}`;
+// const NEXTJS_SERVER_DOMAIN_NAME = `nextjs-server.${DOMAIN_NAME}`;
 const REMIX_DOMAIN_NAME = `remix.${DOMAIN_NAME}`;
 
 type InfrastructureProps = {
