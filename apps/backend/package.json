@@ -1,12 +1,12 @@
 {
   "name": "@broadlify/backend",
   "version": "0.0.0",
-  "scripts": {
-    "bootstrap": "directus bootstrap",
-    "start": "directus start",
-    "build:extension:greeting": "cd src/extensions/greeting && npm run build",
-    "build": "npm run build:extension:greeting && tsc && ts-node scripts/build.ts"
-  },
+"scripts": {
+  "bootstrap": "directus bootstrap",
+  "start": "directus start",
+  "build:extension:greeting": "cd src/extensions/greeting && npm run build",
+  "build": "npm run build:extension:greeting && tsc && ts-node scripts/build.ts"
+},
   "dependencies": {
     "directus": "^9.11.0",
     "dotenv": "^16.0.1",
