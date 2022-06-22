@@ -818,32 +818,32 @@ class Infrastructure extends Construct {
 
     deployActionProject.node.addDependency(app);
 
-    const reactDistributionArn = `arn:aws:cloudfront::${props.accountId}:distribution/${reactDistribution.distributionId}`;
-    const nextJsClientDistributionArn = `arn:aws:cloudfront::${props.accountId}:distribution/${nextjsClientDistribution.distributionId}`;
-    const remixDistributionArn = `arn:aws:cloudfront::${props.accountId}:distribution/${remixDistribution.distributionId}`;
+    // const reactDistributionArn = `arn:aws:cloudfront::${props.accountId}:distribution/${reactDistribution.distributionId}`;
+    // const nextJsClientDistributionArn = `arn:aws:cloudfront::${props.accountId}:distribution/${nextjsClientDistribution.distributionId}`;
+    // const remixDistributionArn = `arn:aws:cloudfront::${props.accountId}:distribution/${remixDistribution.distributionId}`;
 
     deployActionProject.addToRolePolicy(
       new iam.PolicyStatement({
         actions: [
           'cloudfront:CreateInvalidation',
           'lambda:UpdateFunctionCode',
-          's3:GetObject',
-          'elasticbeanstalk:CreateApplicationVersion',
-          'elasticbeanstalk:UpdateEnvironment',
+          's3:*',
+          'elasticbeanstalk:*',
         ],
         resources: [
-          reactDistributionArn,
-          nextJsClientDistributionArn,
-          remixDistributionArn,
-          logLambda.functionArn,
-          remixLambda.functionArn,
-          `${apiBucket.bucketArn}/source`,
-          `${remixBucket.bucketArn}/source`,
-          `${backendBucket.bucketArn}/source`,
-          `arn:aws:s3:::elasticbeanstalk-us-east-1-${props.accountId}`,
-          `arn:aws:s3:::elasticbeanstalk-us-east-1-${props.accountId}/*`,
-          `arn:aws:elasticbeanstalk:us-east-1:${props.accountId}:applicationversion/*`,
-          `arn:aws:elasticbeanstalk:us-east-1:${props.accountId}:environment/*`,
+          '*',
+          // reactDistributionArn,
+          // nextJsClientDistributionArn,
+          // remixDistributionArn,
+          // logLambda.functionArn,
+          // remixLambda.functionArn,
+          // `${apiBucket.bucketArn}/source`,
+          // `${remixBucket.bucketArn}/source`,
+          // `${backendBucket.bucketArn}/source`,
+          // `arn:aws:s3:::elasticbeanstalk-us-east-1-${props.accountId}`,
+          // `arn:aws:s3:::elasticbeanstalk-us-east-1-${props.accountId}/*`,
+          // `arn:aws:elasticbeanstalk:us-east-1:${props.accountId}:applicationversion/*`,
+          // `arn:aws:elasticbeanstalk:us-east-1:${props.accountId}:environment/*`,
         ],
       }),
     );
