@@ -4,7 +4,8 @@
   "scripts": {
     "bootstrap": "directus bootstrap",
     "start": "directus start",
-    "build": "tsc && ts-node scripts/build.ts"
+    "build:extension:greeting": "cd src/extensions/greeting && npm run build",
+    "build": "npm run build:extension:greeting && tsc && ts-node scripts/build.ts"
   },
   "dependencies": {
     "directus": "^9.11.0",

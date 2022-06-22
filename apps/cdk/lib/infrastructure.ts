@@ -567,11 +567,13 @@ class Infrastructure extends Construct {
           optionName: 'Subnets',
           value: ebPrivateSubnetsSelection.subnetIds.join(','),
         },
+        // Directus - Config options - General
         {
           namespace: 'aws:elasticbeanstalk:application:environment',
-          optionName: 'KEY',
-          value: 'e9389813-ded0-4594-941c-abf8ca4535a7',
+          optionName: 'PORT',
+          value: '8080',
         },
+        // Directus - Config options - Database
         {
           namespace: 'aws:elasticbeanstalk:application:environment',
           optionName: 'DB_CLIENT',
@@ -602,6 +604,18 @@ class Infrastructure extends Construct {
           optionName: 'DB_PASSWORD',
           value: rdsPassword.toString(),
         },
+        // Directus - Config options - Security
+        {
+          namespace: 'aws:elasticbeanstalk:application:environment',
+          optionName: 'KEY',
+          value: 'e9389813-ded0-4594-941c-abf8ca4535a7',
+        },
+        {
+          namespace: 'aws:elasticbeanstalk:application:environment',
+          optionName: 'SECRET',
+          value: 'btzkt!7(^2jzo9%zt_4nc=_)hiyq^lk3+0i&#&=e*9fv4islx2',
+        },
+        // Directus - Config options - File storage
         {
           namespace: 'aws:elasticbeanstalk:application:environment',
           optionName: 'STORAGE_LOCATIONS',

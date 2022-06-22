@@ -14,6 +14,7 @@ const ZIP_BUNDLE_ENTRIES = [
   'package.json',
   'uploads',
   '.platform',
+  'extensions',
 ];
 
 (async () => {
