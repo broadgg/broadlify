@@ -33,15 +33,12 @@ const SOURCE_DIRECTORIES = {
   NEXTJS_CLIENT: path.join(__dirname, '../../nextjs-client/dist'),
   REACT: path.join(__dirname, '../../react/dist'),
   REMIX: path.join(__dirname, '../../remix/build/source'),
-  REMIX_ASSETS: path.join(__dirname, '../../remix/public'),
 };
 
 const DOMAIN_NAME = 'marekvargovcik.com';
 const API_DOMAIN_NAME = `api.${DOMAIN_NAME}`;
-const BACKEND_DOMAIN_NAME = `backend.${DOMAIN_NAME}`;
 const REACT_DOMAIN_NAME = `react.${DOMAIN_NAME}`;
 const NEXTJS_CLIENT_DOMAIN_NAME = `nextjs-client.${DOMAIN_NAME}`;
-const NEXTJS_SERVER_DOMAIN_NAME = `nextjs-server.${DOMAIN_NAME}`;
 const REMIX_DOMAIN_NAME = `remix.${DOMAIN_NAME}`;
 
 type InfrastructureProps = {
@@ -324,25 +321,6 @@ class Infrastructure extends Construct {
       cdk.Stack.of(this).region
     }.${cdk.Stack.of(this).urlSuffix}`;
 
-    const remixAssetsBucket = new s3.Bucket(this, 'remixAssetsBucket', {
-      autoDeleteObjects: true,
-      bucketName: `${REMIX_DOMAIN_NAME}-assets`,
-      publicReadAccess: true,
-      removalPolicy: cdk.RemovalPolicy.DESTROY,
-    });
-
-    remixAssetsBucket.addToResourcePolicy(
-      new iam.PolicyStatement({
-        actions: ['s3:GetObject'],
-        principals: [
-          new iam.CanonicalUserPrincipal(
-            cloudfrontOAI.cloudFrontOriginAccessIdentityS3CanonicalUserId,
-          ),
-        ],
-        resources: [remixAssetsBucket.arnForObjects('*')],
-      }),
-    );
-
     const remixCertificate = new acm.DnsValidatedCertificate(
       this,
       'remixCertificate',
@@ -358,14 +336,6 @@ class Infrastructure extends Construct {
       this,
       'remixDistribution',
       {
-        additionalBehaviors: {
-          '/assets/*': {
-            allowedMethods: cloudfront.AllowedMethods.ALLOW_GET_HEAD_OPTIONS,
-            origin: new cloudfrontOrigins.S3Origin(remixAssetsBucket, {
-              originAccessIdentity: cloudfrontOAI,
-            }),
-          },
-        },
         certificate: remixCertificate,
         defaultBehavior: {
           allowedMethods: cloudfront.AllowedMethods.ALLOW_ALL,
@@ -403,13 +373,6 @@ class Infrastructure extends Construct {
       domainName: REMIX_DOMAIN_NAME,
       recordName: addWWWSuffix(REMIX_DOMAIN_NAME),
       zone,
-    });
-
-    new s3deploy.BucketDeployment(this, 'remixAssetsBucketDeployment', {
-      destinationBucket: remixAssetsBucket,
-      distribution: remixDistribution,
-      distributionPaths: ['/assets/*'],
-      sources: [s3deploy.Source.asset(SOURCE_DIRECTORIES.REMIX_ASSETS)],
     });
 
     // api
@@ -508,6 +471,7 @@ class Infrastructure extends Construct {
     role.addManagedPolicy(managedPolicy);
 
     const profileName = `${name}-Directus-InstanceProfile`;
+
     new iam.CfnInstanceProfile(this, profileName, {
       instanceProfileName: profileName,
       roles: [role.roleName],
@@ -516,6 +480,7 @@ class Infrastructure extends Construct {
     const s3User = new iam.User(this, 'S3User', {
       userName: `${name}-s3-user`,
     });
+
     s3User.addManagedPolicy(
       iam.ManagedPolicy.fromManagedPolicyArn(
         this,
@@ -554,23 +519,22 @@ class Infrastructure extends Construct {
     appVersion.node.addDependency(backendDeployment);
     appVersion.addDependsOn(app);
 
-    const backendCertificate = new acm.DnsValidatedCertificate(
-      this,
-      'backendCertificate',
-      {
-        domainName: BACKEND_DOMAIN_NAME,
-        hostedZone: zone,
-        region: 'us-east-1',
-        subjectAlternativeNames: [addWWWSuffix(BACKEND_DOMAIN_NAME)],
-      },
-    );
+    const ebPublicSubnetsSelection = vpc.selectSubnets({
+      onePerAz: true,
+      subnetType: ec2.SubnetType.PUBLIC,
+    });
+
+    const ebPrivateSubnetsSelection = vpc.selectSubnets({
+      onePerAz: true,
+      subnetType: ec2.SubnetType.PRIVATE_WITH_NAT,
+    });
 
     const optionSettingProperties: elasticbeanstalk.CfnEnvironment.OptionSettingProperty[] =
       [
         {
           namespace: 'aws:autoscaling:launchconfiguration',
           optionName: 'InstanceType',
-          value: 't2.medium',
+          value: 't2.small',
         },
         {
           namespace: 'aws:autoscaling:asg',
@@ -587,21 +551,6 @@ class Infrastructure extends Construct {
           optionName: 'IamInstanceProfile',
           value: profileName,
         },
-        // {
-        //   namespace: 'aws:elb:listener:80',
-        //   optionName: 'SSLCertificateId',
-        //   value: backendCertificate.certificateArn,
-        // },
-        // {
-        //   namespace: 'aws:elb:listener:80',
-        //   optionName: 'ListenerProtocol',
-        //   value: 'HTTPS',
-        // },
-        // {
-        //   namespace: 'aws:elb:listener:80',
-        //   optionName: 'InstancePort',
-        //   value: '80',
-        // },
         {
           namespace: 'aws:ec2:vpc',
           optionName: 'VPCId',
@@ -610,12 +559,17 @@ class Infrastructure extends Construct {
         {
           namespace: 'aws:ec2:vpc',
           optionName: 'ELBSubnets',
-          value: vpc.publicSubnets.map((value) => value.subnetId).join(','),
+          value: ebPublicSubnetsSelection.subnetIds.join(','),
         },
         {
           namespace: 'aws:ec2:vpc',
           optionName: 'Subnets',
-          value: vpc.privateSubnets.map((value) => value.subnetId).join(','),
+          value: ebPrivateSubnetsSelection.subnetIds.join(','),
+        },
+        {
+          namespace: 'aws:elasticbeanstalk:application:environment',
+          optionName: 'KEY',
+          value: 'e9389813-ded0-4594-941c-abf8ca4535a7',
         },
         {
           namespace: 'aws:elasticbeanstalk:application:environment',
@@ -690,21 +644,7 @@ class Infrastructure extends Construct {
       versionLabel: appVersion.ref,
     });
     env.node.addDependency(database);
-    env.node.addDependency(backendCertificate);
     env.addDependsOn(app);
-
-    const backendARecord = new route53.ARecord(this, 'backendARecord', {
-      recordName: BACKEND_DOMAIN_NAME,
-      target: route53.RecordTarget.fromAlias({
-        bind: (): route53.AliasRecordTargetConfig => ({
-          dnsName: env.attrEndpointUrl,
-          // us-east-1 hostedZoneId for load balanced environments https://docs.aws.amazon.com/general/latest/gr/elb.html
-          hostedZoneId: 'Z35SXDOTRQ7X7K',
-        }),
-      }),
-      zone,
-    });
-    backendARecord.node.addDependency(env);
 
     // ci/cd
     const pipeline = new codepipeline.Pipeline(this, 'pipeline', {
@@ -732,8 +672,7 @@ class Infrastructure extends Construct {
     const reactOutput = new codepipeline.Artifact('reactOutput');
     const nextjsClientOutput = new codepipeline.Artifact('nextjsClientOutput');
     const remixBuildOutput = new codepipeline.Artifact('remixBuildOutput');
-    const remixAssetsOutput = new codepipeline.Artifact('remixAssetsOutput');
-    // const backendOutput = new codepipeline.Artifact('backend');
+    const backendOutput = new codepipeline.Artifact('backend');
 
     const buildStage = new codepipelineActions.CodeBuildAction({
       actionName: 'Build',
@@ -743,8 +682,7 @@ class Infrastructure extends Construct {
         reactOutput,
         nextjsClientOutput,
         remixBuildOutput,
-        remixAssetsOutput,
-        // backendOutput
+        backendOutput,
       ],
       project: new codebuild.PipelineProject(this, 'project', {
         buildSpec: codebuild.BuildSpec.fromObject(
@@ -793,21 +731,14 @@ class Infrastructure extends Construct {
         objectKey: 'source',
       });
 
-    const uploadRemixAssetsArtifactToS3Action =
+    const uploadBackendArtifactToS3Action =
       new codepipelineActions.S3DeployAction({
-        actionName: 'uploadRemixAssetsAction',
-        bucket: remixAssetsBucket,
-        input: remixAssetsOutput,
+        actionName: 'Backend',
+        bucket: backendBucket,
+        extract: false,
+        input: backendOutput,
+        objectKey: 'source',
       });
-
-    // const uploadBackendArtifactToS3Action =
-    //   new codepipelineActions.S3DeployAction({
-    //     actionName: 'Backend',
-    //     bucket: backendBucket,
-    //     extract: false,
-    //     input: backendOutput,
-    //     objectKey: 'source',
-    //   });
 
     pipeline.addStage({
       actions: [
@@ -815,8 +746,7 @@ class Infrastructure extends Construct {
         uploadReactArtifactToS3Action,
         uploadNextJsClientArtifactToS3Action,
         uploadRemixBuildArtifactToS3Action,
-        uploadRemixAssetsArtifactToS3Action,
-        // uploadBackendArtifactToS3Action,
+        uploadBackendArtifactToS3Action,
       ],
       stageName: 'Upload',
     });

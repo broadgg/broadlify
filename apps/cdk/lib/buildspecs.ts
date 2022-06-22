@@ -5,7 +5,10 @@ const createBuildBuildspec = () => ({
         'base-directory': 'apps/api/dist',
         files: ['*.js'],
       },
-
+      backend: {
+        'base-directory': 'apps/backend/dist',
+        files: ['**/*'],
+      },
       nextjsClientOutput: {
         'base-directory': 'apps/nextjs-client/dist',
         files: ['**/*'],
@@ -22,10 +25,6 @@ const createBuildBuildspec = () => ({
         'base-directory': 'apps/remix/build',
         files: ['**/.js'],
       },
-      // backend: {
-      //   'base-directory': 'apps/backend/dist',
-      //   files: ['**/*'],
-      // },
     },
   },
   phases: {
@@ -35,7 +34,7 @@ const createBuildBuildspec = () => ({
         'npm run react:build',
         'npm run nextjs-client:build',
         'npm run remix:build',
-        // 'npm run backend:build',
+        'npm run backend:build',
       ],
     },
     install: {
