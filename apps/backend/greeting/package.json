@@ -8,7 +8,7 @@
 	],
 	"directus:extension": {
 		"type": "endpoint",
-		"path": "../src/extensions/endpoints/greeting/index.js",
+		"path": "../extensions/endpoints/greeting/index.js",
 		"source": "src/index.ts",
 		"host": "^9.12.2"
 	},
