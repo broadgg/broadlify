@@ -46,7 +46,7 @@ const createBuildBuildspec = () => ({
 type CreateDeployBuildspecParams = {
   backend: {
     applicationName: string;
-    commitId: string;
+    environmentName: string;
     source: {
       bucket: string;
       key: string;
@@ -88,12 +88,19 @@ const createDeployBuildspec = ({
     ].join(' '),
   );
 
-  const backendDeployCommand = [
+  const backendCreateApplicationVersionCommand = [
     'aws elasticbeanstalk',
     'create-application-version',
     `--application-name ${backend.applicationName}`,
-    '--version-label $(date +%Y-%m-%d)',
+    '--version-label $CODEBUILD_RESOLVED_SOURCE_VERSION',
     `--source-bundle S3Bucket="${backend.source.bucket}",S3Key="${backend.source.key}"`,
+  ].join(' ');
+
+  const backendUpdateEnvironment = [
+    'aws elasticbeanstalk',
+    'update-environment',
+    `--environment-name ${backend.environmentName}`,
+    '--version-label $CODEBUILD_RESOLVED_SOURCE_VERSION',
   ].join(' ');
 
   return {
@@ -102,7 +109,8 @@ const createDeployBuildspec = ({
         commands: [
           ...lambdaUpdateCommands,
           ...distributionInvalidationCommands,
-          backendDeployCommand,
+          backendCreateApplicationVersionCommand,
+          backendUpdateEnvironment,
         ],
       },
     },

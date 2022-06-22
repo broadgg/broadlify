@@ -769,7 +769,7 @@ class Infrastructure extends Construct {
       buildspecs.createDeployBuildspec({
         backend: {
           applicationName: app.applicationName as string,
-          commitId: sourceStage.variables.commitId,
+          environmentName: env.environmentName as string,
           source: {
             bucket: backendBucket.bucketName,
             key: 'source',
@@ -829,6 +829,7 @@ class Infrastructure extends Construct {
           'lambda:UpdateFunctionCode',
           's3:GetObject',
           'elasticbeanstalk:CreateApplicationVersion',
+          'elasticbeanstalk:UpdateEnvironment',
         ],
         resources: [
           reactDistributionArn,
@@ -839,9 +840,8 @@ class Infrastructure extends Construct {
           `${apiBucket.bucketArn}/source`,
           `${remixBucket.bucketArn}/source`,
           `${backendBucket.bucketArn}/source`,
-          'arn:aws:s3:::elasticbeanstalk*',
-          `arn:aws:s3:::elasticbeanstalk-*-${props.accountId}`,
-          `arn:aws:s3:::elasticbeanstalk-*-${props.accountId}/*`,
+          `arn:aws:elasticbeanstalk:us-east-1:${props.accountId}:applicationversion/*`,
+          `arn:aws:elasticbeanstalk:us-east-1:${props.accountId}:environment/*`,
         ],
       }),
     );
