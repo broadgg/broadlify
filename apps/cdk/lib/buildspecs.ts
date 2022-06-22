@@ -70,7 +70,10 @@ const createDeployBuildspec = ({
   return {
     phases: {
       build: {
-        commands: [lambdaUpdateCommands, distributionInvalidationCommands],
+        commands: [
+          ...lambdaUpdateCommands,
+          ...distributionInvalidationCommands,
+        ],
       },
     },
     version: 0.2,
