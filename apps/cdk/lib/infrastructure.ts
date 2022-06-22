@@ -840,6 +840,8 @@ class Infrastructure extends Construct {
           `${apiBucket.bucketArn}/source`,
           `${remixBucket.bucketArn}/source`,
           `${backendBucket.bucketArn}/source`,
+          `arn:aws:s3:::elasticbeanstalk-us-east-1-${props.accountId}`,
+          `arn:aws:s3:::elasticbeanstalk-us-east-1-${props.accountId}/*`,
           `arn:aws:elasticbeanstalk:us-east-1:${props.accountId}:applicationversion/*`,
           `arn:aws:elasticbeanstalk:us-east-1:${props.accountId}:environment/*`,
         ],

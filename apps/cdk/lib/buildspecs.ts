@@ -92,7 +92,7 @@ const createDeployBuildspec = ({
     'aws elasticbeanstalk',
     'create-application-version',
     `--application-name ${backend.applicationName}`,
-    '--version-label $CODEBUILD_RESOLVED_SOURCE_VERSION',
+    '--version-label $CODEBUILD_RESOLVED_SOURCE_VERSION-$CODEBUILD_START_TIME',
     `--source-bundle S3Bucket="${backend.source.bucket}",S3Key="${backend.source.key}"`,
   ].join(' ');
 
@@ -100,7 +100,7 @@ const createDeployBuildspec = ({
     'aws elasticbeanstalk',
     'update-environment',
     `--environment-name ${backend.environmentName}`,
-    '--version-label $CODEBUILD_RESOLVED_SOURCE_VERSION',
+    '--version-label $CODEBUILD_RESOLVED_SOURCE_VERSION-$CODEBUILD_START_TIME',
   ].join(' ');
 
   return {
