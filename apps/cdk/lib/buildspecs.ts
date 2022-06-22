@@ -27,10 +27,10 @@ const createBuildBuildspec = () => ({
     build: {
       commands: [
         'npm run api:build',
-        'npm run react:build',
-        'npm run nextjs-client:build',
-        'npm run remix:build',
         'npm run backend:build',
+        'npm run nextjs-client:build',
+        'npm run react:build',
+        'npm run remix:build',
       ],
     },
     install: {
