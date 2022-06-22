@@ -645,6 +645,17 @@ class Infrastructure extends Construct {
           optionName: 'STORAGE_S3_REGION',
           value: 'us-east-1',
         },
+        // Directus - Config options - Admin
+        {
+          namespace: 'aws:elasticbeanstalk:application:environment',
+          optionName: 'ADMIN_EMAIL',
+          value: 'admin@admin.com',
+        },
+        {
+          namespace: 'aws:elasticbeanstalk:application:environment',
+          optionName: 'ADMIN_PASSWORD',
+          value: 'Admin1',
+        },
       ];
 
     const node = this.node;
