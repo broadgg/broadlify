@@ -14,7 +14,6 @@ import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as elasticbeanstalk from 'aws-cdk-lib/aws-elasticbeanstalk';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
-import type { FunctionOptions } from 'aws-cdk-lib/aws-lambda';
 import * as rds from 'aws-cdk-lib/aws-rds';
 import * as route53 from 'aws-cdk-lib/aws-route53';
 import * as targets from 'aws-cdk-lib/aws-route53-targets';
@@ -269,7 +268,7 @@ class Infrastructure extends Construct {
     });
 
     // remix
-    const remixBuildBucket = new s3.Bucket(this, 'remixBuildBucket', {
+    const remixBucket = new s3.Bucket(this, 'remixBucket', {
       autoDeleteObjects: true,
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
       bucketName: REMIX_DOMAIN_NAME,
@@ -277,7 +276,7 @@ class Infrastructure extends Construct {
       removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 
-    remixBuildBucket.addToResourcePolicy(
+    remixBucket.addToResourcePolicy(
       new iam.PolicyStatement({
         actions: ['s3:GetObject'],
         principals: [
@@ -285,21 +284,21 @@ class Infrastructure extends Construct {
             cloudfrontOAI.cloudFrontOriginAccessIdentityS3CanonicalUserId,
           ),
         ],
-        resources: [remixBuildBucket.arnForObjects('*')],
+        resources: [remixBucket.arnForObjects('*')],
       }),
     );
 
     const remixBuildDeployment = new s3deploy.BucketDeployment(
       this,
-      'remixBuildBucketDeployment',
+      'remixBucketDeployment',
       {
-        destinationBucket: remixBuildBucket,
+        destinationBucket: remixBucket,
         sources: [s3deploy.Source.asset(SOURCE_DIRECTORIES.REMIX)],
       },
     );
 
     const remixLambda = new lambda.Function(this, 'remixLambda', {
-      code: lambda.Code.fromBucket(remixBuildBucket, 'source'),
+      code: lambda.Code.fromBucket(remixBucket, 'source'),
       handler: 'index.handler',
       runtime: lambda.Runtime.NODEJS_14_X,
       timeout: cdk.Duration.seconds(10),
@@ -391,7 +390,7 @@ class Infrastructure extends Construct {
     });
 
     // api
-    const lambdaEnvironment: FunctionOptions['environment'] = {
+    const lambdaEnvironment: lambda.FunctionOptions['environment'] = {
       DB_HOSTNAME: database.clusterEndpoint.hostname,
       DB_NAME: 'aws_db',
       DB_PASSWORD: rdsPassword.toString(),
@@ -740,9 +739,9 @@ class Infrastructure extends Construct {
     const uploadRemixBuildArtifactToS3Action =
       new codepipelineActions.S3DeployAction({
         actionName: 'uploadRemixBuildAction',
-        bucket: remixBuildBucket,
+        bucket: remixBucket,
         extract: false,
-        input: remixBuildOutput,
+        input: remixOutput,
         objectKey: 'source',
       });
 
@@ -793,7 +792,7 @@ class Infrastructure extends Construct {
                 name: logLambda.functionName,
               },
               {
-                bucket: remixBuildBucket.bucketName,
+                bucket: remixBucket.bucketName,
                 key: 'source',
                 name: remixLambda.functionName,
               },
@@ -825,7 +824,7 @@ class Infrastructure extends Construct {
           logLambda.functionArn,
           remixLambda.functionArn,
           `${apiBucket.bucketArn}/source`,
-          `${remixBuildBucket.bucketArn}/source`,
+          `${remixBucket.bucketArn}/source`,
         ],
       }),
     );
