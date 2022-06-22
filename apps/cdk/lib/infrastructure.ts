@@ -765,46 +765,58 @@ class Infrastructure extends Construct {
       stageName: 'Upload',
     });
 
+    const deployActionProjectBuildspec = codebuild.BuildSpec.fromObject(
+      buildspecs.createDeployBuildspec({
+        backend: {
+          applicationName: app.applicationName as string,
+          commitId: sourceStage.variables.commitId,
+          source: {
+            bucket: backendBucket.bucketName,
+            key: 'source',
+          },
+        },
+        distributions: [
+          {
+            id: reactDistribution.distributionId,
+            path: '/*',
+          },
+          {
+            id: remixDistribution.distributionId,
+            path: '/*',
+          },
+          {
+            id: nextjsClientDistribution.distributionId,
+            path: '/*',
+          },
+        ],
+        functions: [
+          {
+            bucket: apiBucket.bucketName,
+            key: 'source',
+            name: logLambda.functionName,
+          },
+          {
+            bucket: remixBucket.bucketName,
+            key: 'source',
+            name: remixLambda.functionName,
+          },
+        ],
+      }),
+    );
+
     const deployActionProject = new codebuild.PipelineProject(
       this,
       'deployApi',
       {
-        buildSpec: codebuild.BuildSpec.fromObject(
-          buildspecs.createDeployBuildspec({
-            distributions: [
-              {
-                id: reactDistribution.distributionId,
-                path: '/*',
-              },
-              {
-                id: remixDistribution.distributionId,
-                path: '/*',
-              },
-              {
-                id: nextjsClientDistribution.distributionId,
-                path: '/*',
-              },
-            ],
-            functions: [
-              {
-                bucket: apiBucket.bucketName,
-                key: 'source',
-                name: logLambda.functionName,
-              },
-              {
-                bucket: remixBucket.bucketName,
-                key: 'source',
-                name: remixLambda.functionName,
-              },
-            ],
-          }),
-        ),
+        buildSpec: deployActionProjectBuildspec,
         environment: {
           buildImage: codebuild.LinuxBuildImage.STANDARD_5_0,
         },
         projectName: 'Deploy',
       },
     );
+
+    deployActionProject.node.addDependency(app);
 
     const reactDistributionArn = `arn:aws:cloudfront::${props.accountId}:distribution/${reactDistribution.distributionId}`;
     const nextJsClientDistributionArn = `arn:aws:cloudfront::${props.accountId}:distribution/${nextjsClientDistribution.distributionId}`;
@@ -816,6 +828,7 @@ class Infrastructure extends Construct {
           'cloudfront:CreateInvalidation',
           'lambda:UpdateFunctionCode',
           's3:GetObject',
+          'elasticbeanstalk:CreateApplicationVersion',
         ],
         resources: [
           reactDistributionArn,
@@ -825,6 +838,10 @@ class Infrastructure extends Construct {
           remixLambda.functionArn,
           `${apiBucket.bucketArn}/source`,
           `${remixBucket.bucketArn}/source`,
+          `${backendBucket.bucketArn}/source`,
+          'arn:aws:s3:::elasticbeanstalk*',
+          `arn:aws:s3:::elasticbeanstalk-*-${props.accountId}`,
+          `arn:aws:s3:::elasticbeanstalk-*-${props.accountId}/*`,
         ],
       }),
     );

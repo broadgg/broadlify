@@ -44,6 +44,14 @@ const createBuildBuildspec = () => ({
 });
 
 type CreateDeployBuildspecParams = {
+  backend: {
+    applicationName: string;
+    commitId: string;
+    source: {
+      bucket: string;
+      key: string;
+    };
+  };
   distributions: Array<{
     id: string;
     path: string;
@@ -56,23 +64,45 @@ type CreateDeployBuildspecParams = {
 };
 
 const createDeployBuildspec = ({
+  backend,
   distributions,
   functions,
 }: CreateDeployBuildspecParams) => {
-  const lambdaUpdateCommands = functions.map(
-    (fn) =>
-      `aws lambda update-function-code --function-name ${fn.name} --s3-bucket ${fn.bucket} --s3-key ${fn.key} --region us-east-1`,
+  const lambdaUpdateCommands = functions.map((fn) =>
+    [
+      'aws lambda',
+      'update-function-code',
+      `--function-name ${fn.name}`,
+      `--s3-bucket ${fn.bucket}`,
+      `--s3-key ${fn.key}`,
+      '--region us-east-1',
+    ].join(' '),
   );
-  const distributionInvalidationCommands = distributions.map(
-    (distribution) =>
-      `aws cloudfront create-invalidation --distribution-id ${distribution.id} --paths "${distribution.path}"`,
+
+  const distributionInvalidationCommands = distributions.map((distribution) =>
+    [
+      'aws cloudfront',
+      'create-invalidation',
+      `--distribution-id ${distribution.id}`,
+      `--paths ${distribution.path}`,
+    ].join(' '),
   );
+
+  const backendDeployCommand = [
+    'aws elasticbeanstalk',
+    'create-application-version',
+    `--application-name ${backend.applicationName}`,
+    `--version-label ${backend.commitId}`,
+    `--source-bundle S3Bucket="${backend.source.bucket}",S3Key="${backend.source.key}"`,
+  ].join(' ');
+
   return {
     phases: {
       build: {
         commands: [
           ...lambdaUpdateCommands,
           ...distributionInvalidationCommands,
+          backendDeployCommand,
         ],
       },
     },
