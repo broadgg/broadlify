@@ -16,10 +16,10 @@
   },
   "name": "@broadlify/backend",
   "scripts": {
-    "bootstrap": "directus bootstrap",
+    "bootstrap": "npx directus bootstrap",
     "build": "npm run build:extension:greeting && tsc && ts-node scripts/build.ts",
     "build:extension:greeting": "cd src/extensions/greeting && npm run build",
-    "start": "directus start"
+    "start": "npx directus start"
   },
   "version": "0.0.0"
 }
