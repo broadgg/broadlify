@@ -19,7 +19,7 @@ const createBuildBuildspec = () => ({
       },
       remixOutput: {
         'base-directory': 'apps/remix/build',
-        files: ['**/.js'],
+        files: ['**/*.js'],
       },
     },
   },
