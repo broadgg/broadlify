@@ -13,7 +13,7 @@ const OUTPUT_DIRECTORY = path.join(__dirname, '../dist');
 
   const commands = [
     `cd ${ROOT_DIRECTORY}`,
-    'zip -Ar source *',
+    'zip -Ar source ./',
     'mkdir -p dist/source',
     `mv source dist/source`,
   ];
