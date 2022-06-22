@@ -11,7 +11,8 @@
     "ts-node": "^10.8.0"
   },
   "engines": {
-    "node": ">=10"
+    "node": "^14",
+    "npm": "^6"
   },
   "name": "@broadlify/backend",
   "scripts": {
