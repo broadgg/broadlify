@@ -829,6 +829,7 @@ class Infrastructure extends Construct {
           'lambda:UpdateFunctionCode',
           's3:*',
           'elasticbeanstalk:*',
+          'cloudformation:*',
         ],
         resources: [
           '*',
