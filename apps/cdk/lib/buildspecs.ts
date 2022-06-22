@@ -92,7 +92,7 @@ const createDeployBuildspec = ({
     'aws elasticbeanstalk',
     'create-application-version',
     `--application-name ${backend.applicationName}`,
-    `--version-label ${backend.commitId}`,
+    '--version-label $(date +%Y-%m-%d)',
     `--source-bundle S3Bucket="${backend.source.bucket}",S3Key="${backend.source.key}"`,
   ].join(' ');
 
