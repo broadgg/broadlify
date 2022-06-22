@@ -6,7 +6,7 @@ const createBuildBuildspec = () => ({
         files: ['*.js'],
       },
       backendOutput: {
-        'base-directory': 'apps/backend/dist',
+        'base-directory': 'apps/backend',
         files: ['**/*'],
       },
       nextjsClientOutput: {
