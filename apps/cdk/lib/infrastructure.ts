@@ -683,21 +683,21 @@ class Infrastructure extends Construct {
       stageName: 'Source',
     });
 
-    const apiOutput = new codepipeline.Artifact('api');
-    const reactOutput = new codepipeline.Artifact('reactOutput');
+    const apiOutput = new codepipeline.Artifact('apiOutput');
+    const backendOutput = new codepipeline.Artifact('backendOutput');
     const nextjsClientOutput = new codepipeline.Artifact('nextjsClientOutput');
-    const remixBuildOutput = new codepipeline.Artifact('remixBuildOutput');
-    const backendOutput = new codepipeline.Artifact('backend');
+    const reactOutput = new codepipeline.Artifact('reactOutput');
+    const remixOutput = new codepipeline.Artifact('remixOutput');
 
     const buildStage = new codepipelineActions.CodeBuildAction({
       actionName: 'Build',
       input: repositorySource,
       outputs: [
         apiOutput,
-        reactOutput,
-        nextjsClientOutput,
-        remixBuildOutput,
         backendOutput,
+        nextjsClientOutput,
+        reactOutput,
+        remixOutput,
       ],
       project: new codebuild.PipelineProject(this, 'project', {
         buildSpec: codebuild.BuildSpec.fromObject(

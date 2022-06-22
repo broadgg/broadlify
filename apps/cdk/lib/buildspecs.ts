@@ -1,11 +1,11 @@
 const createBuildBuildspec = () => ({
   artifacts: {
     'secondary-artifacts': {
-      api: {
+      apiOutput: {
         'base-directory': 'apps/api/dist',
         files: ['*.js'],
       },
-      backend: {
+      backendOutput: {
         'base-directory': 'apps/backend/dist',
         files: ['**/*'],
       },
@@ -17,13 +17,9 @@ const createBuildBuildspec = () => ({
         'base-directory': 'apps/react/dist',
         files: ['**/*'],
       },
-      remixAssetsOutput: {
-        'base-directory': 'apps/remix/public',
-        files: ['**/*'],
-      },
-      remixBuildOutput: {
+      remixOutput: {
         'base-directory': 'apps/remix/build',
-        files: ['*/.js'],
+        files: ['**/.js'],
       },
     },
   },
