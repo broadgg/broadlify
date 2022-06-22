@@ -830,6 +830,7 @@ class Infrastructure extends Construct {
           's3:*',
           'elasticbeanstalk:*',
           'cloudformation:*',
+          'autoscaling:*',
         ],
         resources: [
           '*',
