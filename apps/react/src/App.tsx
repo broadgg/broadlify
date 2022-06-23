@@ -1,9 +1,7 @@
 const App = () => {
-  const name = 'CDK';
-
   return (
     <h1>
-      Hello <span>{name}</span>! This is me!
+      This <span>changed</span> just now.
     </h1>
   );
 };

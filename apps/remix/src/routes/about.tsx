@@ -3,6 +3,7 @@ import { Link } from '@remix-run/react';
 const Index = () => (
   <div style={{ fontFamily: 'system-ui, sans-serif', lineHeight: '1.4' }}>
     <h1>Welcome to Remix - About page</h1>
+    <h1>This changed!</h1>
     <ul>
       <li>
         <a
@@ -28,7 +29,7 @@ const Index = () => (
         </a>
       </li>
       <li>
-        <Link to='/'>Go to homepage</Link>
+        <Link to='/'>Homepage</Link>
       </li>
     </ul>
   </div>

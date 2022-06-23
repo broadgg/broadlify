@@ -3,6 +3,7 @@ import { Link } from '@remix-run/react';
 const Index = () => (
   <div style={{ fontFamily: 'system-ui, sans-serif', lineHeight: '1.4' }}>
     <h1>Welcome to Remix - Index page</h1>
+    <h1>This changed!</h1>
     <ul>
       <li>
         <a
