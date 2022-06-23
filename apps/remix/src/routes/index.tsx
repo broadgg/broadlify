@@ -28,7 +28,7 @@ const Index = () => (
         </a>
       </li>
       <li>
-        <Link to='/about'>About</Link>
+        <Link to='/about'>Go to About</Link>
       </li>
     </ul>
   </div>

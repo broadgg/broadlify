@@ -3,7 +3,7 @@ const App = () => {
 
   return (
     <h1>
-      Hello <span>{name}</span>!
+      Hello <span>{name}</span>! This is me!
     </h1>
   );
 };

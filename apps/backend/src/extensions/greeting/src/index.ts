@@ -1,5 +1,5 @@
 import { defineEndpoint } from '@directus/extensions-sdk';
 
 export default defineEndpoint((router) => {
-  router.get('/hello', (_req, res) => res.send('Hello World?'));
+  router.get('/ahoy', (_req, res) => res.send('Hello World!'));
 });

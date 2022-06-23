@@ -23,7 +23,7 @@ const handler: APIGatewayProxyHandler = async () => {
       body: JSON.stringify({
         errors: [
           {
-            source: 'no idea',
+            source: 'No idea',
             stackTrace: error instanceof Error ? error.message : null,
           },
         ],

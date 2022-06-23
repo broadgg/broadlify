@@ -28,7 +28,7 @@ const Index = () => (
         </a>
       </li>
       <li>
-        <Link to='/'>Back to homepage</Link>
+        <Link to='/'>Go to homepage</Link>
       </li>
     </ul>
   </div>
