@@ -3,8 +3,8 @@
     "turbo": "latest"
   },
   "engines": {
-    "node": "^14",
-    "npm": "^6"
+    "node": "^14 || ^16",
+    "npm": "^6 || ^8"
   },
   "name": "@broadlify/monorepo",
   "packageManager": "npm@8.1.2",
