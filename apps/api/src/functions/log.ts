@@ -7,6 +7,10 @@ import { database } from '../utils';
 const handler: APIGatewayProxyHandler = async () => {
   try {
     await database.execute(
+      'CREATE TABLE IF NOT EXISTS accessLogs (ipAddress VARCHAR(255), userAgent VARCHAR(255))',
+      [],
+    );
+    await database.execute(
       'INSERT INTO accessLogs (ipAddress, userAgent) VALUES(?, ?)',
       ['should be ip address', 'should be user agent'],
     );
