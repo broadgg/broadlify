@@ -94,6 +94,7 @@ class Infrastructure extends Construct {
         rdsUsername.toString(),
         rdsPassword,
       ),
+      defaultDatabaseName: 'api_db',
       engine: rds.DatabaseClusterEngine.AURORA_MYSQL,
       instanceProps: {
         instanceType: ec2.InstanceType.of(
@@ -392,7 +393,7 @@ class Infrastructure extends Construct {
     // api
     const lambdaEnvironment: lambda.FunctionOptions['environment'] = {
       DB_HOSTNAME: database.clusterEndpoint.hostname,
-      DB_NAME: 'aws_db',
+      DB_NAME: 'api_db',
       DB_PASSWORD: rdsPassword.toString(),
       DB_PORT: database.clusterEndpoint.port.toString(),
       DB_USER: rdsUsername.toString(),
