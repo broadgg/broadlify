@@ -1,9 +1,5 @@
 const App = () => {
-  return (
-    <h1>
-      This <span>changed</span> just now.
-    </h1>
-  );
+  return <h1>Today is 06.07.2022</h1>;
 };
 
 export { App };

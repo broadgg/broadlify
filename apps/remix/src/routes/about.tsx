@@ -1,38 +1,15 @@
 import { Link } from '@remix-run/react';
 
-const Index = () => (
+const About = () => (
   <div style={{ fontFamily: 'system-ui, sans-serif', lineHeight: '1.4' }}>
-    <h1>Welcome to Remix - About page</h1>
-    <h1>This changed!</h1>
+    <h1>Today is 06.07.2022</h1>
     <ul>
-      <li>
-        <a
-          href='https://remix.run/tutorials/blog'
-          rel='noreferrer'
-          target='_blank'
-        >
-          15m Quickstart Blog Tutorial
-        </a>
-      </li>
-      <li>
-        <a
-          href='https://remix.run/tutorials/jokes'
-          rel='noreferrer'
-          target='_blank'
-        >
-          Deep Dive Jokes App Tutorial
-        </a>
-      </li>
-      <li>
-        <a href='https://remix.run/docs' rel='noreferrer' target='_blank'>
-          Remix Docs
-        </a>
-      </li>
       <li>
         <Link to='/'>Homepage</Link>
       </li>
+      <li style={{ color: 'red' }}>About</li>
     </ul>
   </div>
 );
 
-export default Index;
+export default About;
