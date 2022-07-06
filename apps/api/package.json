@@ -15,7 +15,6 @@
   "name": "@broadlify/api",
   "scripts": {
     "build": "tsc && ts-node scripts/build.ts",
-    "dev": "nodemon src/* --exec tsc",
     "lint": "eslint src",
     "lint:fix": "eslint --fix src"
   },
