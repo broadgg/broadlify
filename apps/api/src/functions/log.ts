@@ -17,7 +17,7 @@ const handler: APIGatewayProxyHandler = async () => {
     return {
       body: JSON.stringify({
         erorrs: [],
-        message: 'Today is 06.07.2022. Log was saved!',
+        message: 'Today is 07.07.2022. Log was saved!',
         success: true,
       }),
       statusCode: 200,
@@ -31,7 +31,7 @@ const handler: APIGatewayProxyHandler = async () => {
             stackTrace: error instanceof Error ? error.message : null,
           },
         ],
-        message: 'Today is 06.07.2022. Failed to save.',
+        message: 'Today is 07.07.2022. Failed to save.',
         success: false,
       }),
       statusCode: 500,
